@@ -27,7 +27,7 @@ from game.items import Item, StatBonus, Championship
 # ---------------------------------------------------------------------------
 # XP thresholds per level (level 1-10)
 # ---------------------------------------------------------------------------
-XP_THRESHOLDS: list[int] = [0, 200, 500, 950, 1600, 2500, 3700, 5200, 7000, 9200]
+XP_THRESHOLDS: list[int] = [0, 150, 380, 700, 1150, 1800, 2700, 3800, 5200, 6800]
 
 
 class Wrestler(ABC):
@@ -468,16 +468,16 @@ class Wrestler(ABC):
     # ------------------------------------------------------------------
 
     def adrenaline_rush(self) -> str:
-        """Use Adrenaline Rush in combat: no damage but +30 HP, +5 Energy.
+        """Use Adrenaline Rush in combat: no damage but +30 HP, +25 Energy.
         
         Returns:
             Log message.
         """
         self.heal(30)
-        self.restore_energy(5)
+        self.restore_energy(25)
         return (
             f"⚡ ADRENALINA! {self._name} czerpie z rezerw! "
-            f"+30 HP, +5 Energii. ({self._current_hp}/{self.max_hp} HP)"
+            f"+30 HP, +25 Energii. ({self._current_hp}/{self.max_hp} HP)"
         )
 
     # ------------------------------------------------------------------
