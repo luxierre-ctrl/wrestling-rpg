@@ -281,7 +281,7 @@ button[data-baseweb="tab"] {
     border: 1px solid #2a2a3e;
     border-radius: 6px;
     padding: 10px 14px;
-    height: 300px;
+    height: 180px;
     overflow-y: auto;
     color: #bbb;
     font-size: 0.84rem;
@@ -355,6 +355,7 @@ def _init_state() -> None:
         "fight_day_npc_day": -1,
         "npc_adrenaline_streak": 0,
         "last_event": "",
+        "show_equip": False,
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -893,373 +894,401 @@ def phase_intro() -> None:
 # LEFT PANEL
 # ══════════════════════════════════════════════════════════════════════════════
 
-def render_player_panel() -> None:
-    player: Wrestler = st.session_state.player
-    if player is None:
-        return
 
+# ══════════════════════════════════════════════════════════════════════════════
+# MOBILE-FIRST LAYOUT HELPERS
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _mini_bar(current: int, maximum: int, color: str, label: str) -> str:
+    """Kompaktowy pasek statystyki."""
+    pct = int((current / maximum) * 100) if maximum > 0 else 0
+    return (
+        f'<div style="display:flex;align-items:center;gap:5px;margin:2px 0;">'
+        f'<span style="color:#888;font-size:0.68rem;min-width:22px;">{label}</span>'
+        f'<div style="flex:1;background:#2a2a3a;border-radius:3px;height:8px;">'
+        f'<div style="width:{pct}%;background:{color};border-radius:3px;height:8px;"></div>'
+        f'</div>'
+        f'<span style="color:#aaa;font-size:0.68rem;min-width:50px;text-align:right;">{current}/{maximum}</span>'
+        f'</div>'
+    )
+
+def _last_event_bar() -> None:
+    """Pasek ostatniego ważnego wydarzenia."""
+    ev = st.session_state.get("last_event", "")
+    if ev:
+        st.markdown(
+            f'<div style="background:#1a1200;border-left:3px solid #f39c12;'
+            f'border-radius:0 5px 5px 0;padding:5px 10px;margin:4px 0;'
+            f'color:#f39c12;font-size:0.82rem;font-weight:600;">'
+            f'📢 {ev}</div>',
+            unsafe_allow_html=True,
+        )
+
+# ══════════════════════════════════════════════════════════════════════════════
+# GŁÓWNY PANEL GRACZA – mobile first, wszystko w jednym ekranie
+# ══════════════════════════════════════════════════════════════════════════════
+
+def render_hud(player: "Wrestler", show_equip_btn: bool = True) -> None:
+    """Górna część HUD – pasek info + statystyki + moveset."""
     from game.characters import XP_THRESHOLDS
 
     chapter_label = "R.I – Szkoła" if st.session_state.chapter == 1 else "R.II – Federacja"
-
-    # ── Nagłówek: badge + imię + klasa w jednej linii ────────────────────────
+    location = "Żelazna Piwnica" if st.session_state.chapter == 1 else "Radom Wrestling League"
+    wins = st.session_state.school_wins if st.session_state.chapter == 1 else st.session_state.federation_wins
+    wins_label = f"WIN {wins}/5" if st.session_state.chapter == 1 else f"WIN {wins}"
     xp_needed = XP_THRESHOLDS[player.level] if player.level < len(XP_THRESHOLDS) else None
     xp_pct = int((player.xp / xp_needed) * 100) if xp_needed else 100
-    xp_txt = f"{player.xp}/{xp_needed}" if xp_needed else "MAX ⭐"
+    xp_txt = f"{player.xp}/{xp_needed}" if xp_needed else "MAX"
 
+    passive = player.passive_skill
+
+    # ── WIERSZ 1: Rozdział | Ksywka | Typ | Poziom ───────────────────────────
     st.markdown(
-        f'''<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
-            <span class="chapter-badge">{chapter_label}</span>
-            <span style="font-family:Bebas Neue,sans-serif;font-size:1.2rem;color:#fff;">🤼 {player.name}</span>
-            <span style="color:#888;font-size:0.75rem;">{player.character_class} · Lvl {player.level}</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-            <span style="color:#888;font-size:0.72rem;white-space:nowrap;">XP {xp_txt}</span>
-            <div style="flex:1;background:#2a2a3a;border-radius:3px;height:6px;">
-                <div style="width:{min(xp_pct,100)}%;background:#e94560;border-radius:3px;height:6px;"></div>
-            </div>
+        f'''<div style="display:flex;gap:6px;align-items:center;
+                      flex-wrap:wrap;padding:3px 0;border-bottom:1px solid #222;margin-bottom:6px;">
+            <span class="chapter-badge" style="font-size:0.65rem;">{chapter_label}</span>
+            <span style="font-family:Bebas Neue,sans-serif;font-size:1.1rem;color:#fff;">
+                {player.name}
+            </span>
+            <span style="color:#888;font-size:0.72rem;">{player.character_class}</span>
+            <span style="color:#e94560;font-size:0.72rem;font-weight:700;margin-left:auto;">
+                LVL {player.level}
+            </span>
         </div>''',
         unsafe_allow_html=True,
     )
 
-    # ── HP + Energia w jednym bloku ──────────────────────────────────────────
-    st.markdown(
-        _bar(player.current_hp, player.max_hp, "hp-bar", "❤️ HP") +
-        _bar(player.current_energy, player.max_energy, "en-bar", "⚡ En"),
-        unsafe_allow_html=True,
-    )
+    # ── WIERSZ 2: Statystyki (lewo) + Info (prawo) ───────────────────────────
+    col_stats, col_info = st.columns([3, 2])
 
-    st.markdown("---")
-    tab_char, tab_equip = st.tabs(["👤 Postać", "🎽 Ekwipunek"])
-
-    with tab_char:
-        # 4 statystyki w zwartym HTML – bez st.metric żeby nie zajmowały za dużo miejsca
+    with col_stats:
+        # XP, HP, Energia – ciasno
         st.markdown(
-            f'''<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:8px;">
-                <div class="stat-box" style="text-align:center;">
-                    <div class="stat-label">💪 Siła</div>
-                    <div style="font-size:1.3rem;font-weight:700;color:#fff;">{player.effective_strength}</div>
-                </div>
-                <div class="stat-box" style="text-align:center;">
-                    <div class="stat-label">🤸 Zręczność</div>
-                    <div style="font-size:1.3rem;font-weight:700;color:#fff;">{player.effective_dexterity}</div>
-                </div>
-                <div class="stat-box" style="text-align:center;">
-                    <div class="stat-label">❤️ Max HP</div>
-                    <div style="font-size:1.3rem;font-weight:700;color:#e94560;">{player.max_hp}</div>
-                </div>
-                <div class="stat-box" style="text-align:center;">
-                    <div class="stat-label">⚡ Max En.</div>
-                    <div style="font-size:1.3rem;font-weight:700;color:#4ecdc4;">{player.max_energy}</div>
-                </div>
+            _mini_bar(player.xp, xp_needed or player.xp or 1, "#9b59b6", "XP") +
+            _mini_bar(player.current_hp, player.max_hp, "#e94560", "HP") +
+            _mini_bar(player.current_energy, player.max_energy, "#4ecdc4", "En"),
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f'<div style="color:#888;font-size:0.65rem;margin-top:2px;">'
+            f'💪 {player.effective_strength} &nbsp;·&nbsp; 🤸 {player.effective_dexterity}</div>',
+            unsafe_allow_html=True,
+        )
+
+    with col_info:
+        st.markdown(
+            f'''<div style="font-size:0.72rem;line-height:1.7;color:#aaa;text-align:right;">
+                <div style="color:#fff;font-weight:700;font-size:0.78rem;">{location}</div>
+                <div style="color:#4ecdc4;">{wins_label} &nbsp; LVL {player.level}</div>
+                <div style="color:#f39c12;">{xp_txt} XP</div>
             </div>''',
             unsafe_allow_html=True,
         )
 
-        # Ruchy + finisher w jednym bloku HTML
+    st.markdown('<div style="border-top:1px solid #222;margin:5px 0;"></div>', unsafe_allow_html=True)
+
+    # ── WIERSZ 3: Moveset (lewo) + Ekwipunek przycisk (prawo) ───────────────
+    col_moves, col_equip = st.columns([3, 2])
+
+    with col_moves:
         moves_html = "".join(
-            f'<div style="display:flex;justify-content:space-between;align-items:center;'
-            f'padding:3px 8px;border-bottom:1px solid #222;">'
-            f'<span style="font-size:0.82rem;color:#ddd;">• {m.name}</span>'
-            f'<span class="stat-label">{m.energy_cost}⚡ ×{m.damage_multiplier}</span></div>'
+            f'<div style="font-size:0.75rem;color:#ddd;padding:1px 0;">'
+            f'• {m.name} <span style="color:#888;font-size:0.65rem;">({m.energy_cost}⚡ ×{m.damage_multiplier})</span></div>'
             for m in player.moves
         )
         fin = player.finisher
         fin_html = (
-            f'<div style="display:flex;justify-content:space-between;align-items:center;'
-            f'padding:3px 8px;background:#1a1200;">'
-            f'<span style="font-size:0.82rem;color:#f39c12;">💥 {fin.name}</span>'
-            f'<span style="color:#f39c12;font-size:0.7rem;font-weight:700;">{fin.energy_cost}⚡ ×{fin.damage_multiplier}</span></div>'
+            f'<div style="font-size:0.75rem;color:#f39c12;padding:1px 0;">'
+            f'💥 {fin.name} <span style="font-size:0.65rem;">({fin.energy_cost}⚡ ×{fin.damage_multiplier})</span></div>'
         ) if fin else ""
-
-        passive = player.passive_skill
+        passive_html = (
+            f'<div style="font-size:0.68rem;color:#4ecdc4;margin-top:3px;border-top:1px solid #1a3a3a;padding-top:3px;">'
+            f'🌟 {passive.name}</div>'
+        )
         st.markdown(
-            f'''<div class="stat-box" style="padding:0;overflow:hidden;">
-                <div style="padding:4px 8px;border-bottom:1px solid #e94560;">
-                    <span class="stat-label">🥊 Ruchy</span>
-                </div>
-                {moves_html}{fin_html}
-            </div>
-            <div class="stat-box" style="border-color:#4ecdc4;margin-top:4px;padding:4px 8px;">
-                <span class="stat-label" style="color:#4ecdc4;">🌟 {passive.name}</span>
-                <br><span style="color:#888;font-size:0.75rem;">{passive.description}</span>
-            </div>''',
+            f'<div style="margin:0;">' + moves_html + fin_html + passive_html + '</div>',
             unsafe_allow_html=True,
         )
 
-    with tab_equip:
-        for slot, (icon, label) in {
-            "outfit": ("👕", "Strój"), "gadget": ("🧤", "Gadżet"),
-            "protector": ("🦺", "Ochraniacz"), "championship": ("🏆", "Pas"),
-        }.items():
-            item = player.equipped.get(slot)
-            if item:
-                st.markdown(
-                    f'<div class="stat-box"><span class="stat-label">{icon} {label}</span><br>'
-                    f'{item.name}<br>'
-                    f'<span style="color:#888;font-size:0.75rem">{repr(item.bonuses)}</span></div>',
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.markdown(
-                    f'<div class="stat-box"><span class="stat-label">{icon} {label}</span><br>'
-                    f'<span style="color:#444">— brak —</span></div>',
-                    unsafe_allow_html=True,
-                )
+    with col_equip:
+        if show_equip_btn:
+            if st.button("🎽\nEkwipunek", key="open_equip", use_container_width=True):
+                st.session_state.show_equip = not st.session_state.get("show_equip", False)
+                st.rerun()
 
-        inv = player.inventory
-        if inv:
-            st.markdown("---")
-            with st.expander(f"🎒 Torba ({len(inv)} przedmiotów)"):
-                for idx, item in enumerate(inv):
-                    c1, c2 = st.columns([3, 1])
-                    with c1:
-                        st.caption(f"**{item.name}**")
-                        st.caption(f"{repr(item.bonuses)} · Lvl {item.required_level}+")
-                    with c2:
-                        if st.button("Załóż", key=f"equip_{idx}_{item.name}"):
-                            try:
-                                log(player.equip(item))
-                                st.rerun()
-                            except ItemRequirementError as e:
-                                st.error(str(e))
-        else:
-            st.caption("Torba jest pusta. Idź na spacer!")
+            # Ekwipunek – rozwijany
+            if st.session_state.get("show_equip", False):
+                _render_equip_panel(player)
 
-# ── Journal ────────────────────────────────────────────────────────────────────
+    st.markdown('<div style="border-top:1px solid #222;margin:5px 0;"></div>', unsafe_allow_html=True)
+
+
+def _render_equip_panel(player: "Wrestler") -> None:
+    """Panel ekwipunku – wyświetlany po kliknięciu przycisku."""
+    slots = {
+        "outfit":       ("👕", "Strój"),
+        "gadget":       ("🧤", "Gadżet"),
+        "protector":    ("🦺", "Ochr."),
+        "championship": ("🏆", "Pas"),
+    }
+    for slot, (icon, label) in slots.items():
+        item = player.equipped.get(slot)
+        name = item.name if item else "—"
+        color = "#ccc" if item else "#444"
+        st.markdown(
+            f'<div style="font-size:0.72rem;color:{color};padding:1px 0;">'
+            f'{icon} <b>{label}:</b> {name}</div>',
+            unsafe_allow_html=True,
+        )
+    inv = player.inventory
+    if inv:
+        with st.expander(f"🎒 Torba ({len(inv)})"):
+            for idx, item in enumerate(inv):
+                c1, c2 = st.columns([3, 1])
+                with c1:
+                    st.caption(f"{item.name} · {repr(item.bonuses)}")
+                with c2:
+                    if st.button("Załóż", key=f"equip_{idx}_{item.name}"):
+                        try:
+                            log(player.equip(item))
+                            st.rerun()
+                        except ItemRequirementError as e:
+                            st.error(str(e))
+
 
 def render_journal() -> None:
-    st.markdown("### 📖 Dziennik")
-    entries = st.session_state.journal[:80]
+    """Scrollowalny dziennik – zajmuje resztę ekranu."""
+    entries = st.session_state.journal[:60]
     html = "<br>".join(f"<span>{e}</span>" for e in entries)
-    st.markdown(f'<div class="journal-box">{html}</div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="journal-box" style="height:180px;">{html}</div>',
+        unsafe_allow_html=True,
+    )
+
 
 # ══════════════════════════════════════════════════════════════════════════════
-# PHASE: GAME
+# PHASE: GAME – mobile layout
 # ══════════════════════════════════════════════════════════════════════════════
 
 def phase_game() -> None:
     player: Wrestler = st.session_state.player
     day = st.session_state.day
-    # Na telefonie [5,6] jest OK – Streamlit stackuje je automatycznie
-    left, right = st.columns([5, 6], gap="small")
 
-    with left:
-        render_player_panel()
+    # ── HUD ──────────────────────────────────────────────────────────────────
+    render_hud(player)
 
-    with right:
-        st.markdown(f"## 📅 Dzień {day}")
+    # ── Pasek ostatniego wydarzenia ───────────────────────────────────────────
+    _last_event_bar()
 
-        # Pasek ostatniego wydarzenia
-        if st.session_state.last_event:
-            st.markdown(
-                f'<div style="background:#1a1a2e;border-left:3px solid #f39c12;'
-                f'border-radius:0 6px 6px 0;padding:7px 12px;margin-bottom:8px;'
-                f'color:#f39c12;font-size:0.9rem;font-weight:600;">'
-                f'📢 {st.session_state.last_event}</div>',
-                unsafe_allow_html=True,
-            )
-
-        # Chapter transition
-        declined_day = st.session_state.get("chapter2_declined_day", -99)
-        recently_declined = (st.session_state.day - declined_day) < 7
-        if (
-            not st.session_state.offered_chapter2
-            and st.session_state.chapter == 1
-            and st.session_state.school_wins >= 5
-            and player.level >= 3
-            and not recently_declined
-        ):
-            _lore(
-                "Kaz siada na krawędzi ringu. Pierwszy raz nie stoi.<br>"
-                "<b>– Nauczyłem cię wszystkiego co mogę nauczyć w piwnicy.</b><br>"
-                "Milczy chwilę.<br>"
-                "<b>– Jest w Radomiu federacja. Lokalna, mała. Ale prawdziwa.</b><br>"
-                "<b>– Chcesz – mogę zadzwonić do Staszka. Jesteś gotowy.</b>"
-            )
-            c1, c2 = st.columns(2)
-            with c1:
-                if st.button("✅ Dołącz do Federacji RWL!", type="primary", use_container_width=True):
-                    st.session_state.chapter = 2
-                    st.session_state.offered_chapter2 = True
-                    log("🏟️ Rozdział II – Radom Wrestling League!")
-                    log("Bożena przy recepcji: <i>– Wypełnij, podpisz, nie czytaj małego druku. Nikt nie czyta.</i>")
-                    st.rerun()
-            with c2:
-                if st.button("❌ Zostań w szkole", use_container_width=True):
-                    st.session_state.chapter2_declined_day = st.session_state.day
-                    st.rerun()
-            return
-
-        # Progress
-        if st.session_state.chapter == 1:
-            st.caption(f"🏫 Żelazna Piwnica · Wygrane: {st.session_state.school_wins}/5 · Poziom: {player.level}/3")
-        else:
-            st.caption(f"🏟️ Radom Wrestling League · Wygrane: {st.session_state.federation_wins} · Poziom: {player.level}")
-
-        # Fight day
-        if day % 7 == 0:
-            st.warning("🥊 **DZIEŃ WALKI!**")
-            # FIX: losuj NPC tylko raz – zapamiętaj na ten dzień
-            if st.session_state.get("fight_day_npc_day") != day:
-                npc_preview = pick_npc_for_fight()
-                st.session_state.fight_day_npc = npc_preview
-                st.session_state.fight_day_npc_day = day
-            else:
-                npc_preview = st.session_state.fight_day_npc
-
-            lore_text = NPC_LORE.get(npc_preview.name)
-            if lore_text:
-                _lore(lore_text)
-            if st.button("🥊 Wejdź na ring!", type="primary", use_container_width=True):
-                st.session_state.current_npc = npc_preview
-                st.session_state.battle_log = [
-                    f"🎺 {player.name} vs {npc_preview.name} [Lvl {npc_preview.level}]",
-                    f"Rywal: HP {npc_preview.current_hp} | Siła {npc_preview.effective_strength} | En {npc_preview.current_energy}",
-                ]
-                st.session_state.battle_over = False
-                st.session_state.battle_won = None
-                st.session_state.npc_adrenaline_streak = 0
-                # NIE regeneruj gracza przed walką – idzie z tym co ma
-                npc_preview.restore_to_full()
-                st.session_state.phase = "battle"
-                st.rerun()
-            return
-
-        # Daily actions
-        st.markdown("### Co robisz dzisiaj?")
-        c1, c2, c3 = st.columns(3)
+    # ── Chapter transition ────────────────────────────────────────────────────
+    declined_day = st.session_state.get("chapter2_declined_day", -99)
+    recently_declined = (st.session_state.day - declined_day) < 7
+    if (
+        not st.session_state.offered_chapter2
+        and st.session_state.chapter == 1
+        and st.session_state.school_wins >= 5
+        and player.level >= 3
+        and not recently_declined
+    ):
+        _lore(
+            "Kaz siada na krawędzi ringu.<br>"
+            "<b>– Nauczyłem cię wszystkiego co mogę. Jest federacja w Radomiu.</b><br>"
+            "<b>– Chcesz – mogę zadzwonić do Staszka.</b>"
+        )
+        c1, c2 = st.columns(2)
         with c1:
-            st.markdown("**🏋️ Trening**")
-            st.caption("+40 XP · −25 HP · −10 En")
-            if st.button("Trenuj!", key="btn_train", use_container_width=True):
-                for m in player.train():
-                    log(m)
-                st.session_state.train_count += 1
-                if st.session_state.train_count % 2 == 0:
-                    log(f"💬 {random.choice(TRENER_QUOTES)}")
-                st.session_state.day += 1
+            if st.button("✅ Dołącz do RWL!", type="primary", use_container_width=True):
+                st.session_state.chapter = 2
+                st.session_state.offered_chapter2 = True
+                log("🏟️ Rozdział II – Radom Wrestling League!")
                 st.rerun()
         with c2:
-            st.markdown("**🚶 Spacer**")
-            st.caption("Szansa na przedmiot")
-            if st.button("Spaceruj!", key="btn_walk", use_container_width=True):
-                msgs, _ = player.walk()
-                for m in msgs:
-                    log(m)
-                # FIX 3: spacer kosztuje 5 energii
-                player.spend_energy(min(5, player.current_energy))
-                log("🚶 Spacer: -5 Energii")
-                st.session_state.day += 1
+            if st.button("❌ Zostań w szkole", use_container_width=True):
+                st.session_state.chapter2_declined_day = st.session_state.day
                 st.rerun()
-        with c3:
-            st.markdown("**😴 Regeneracja**")
-            st.caption("+30 HP · +10 Energii")
-            if st.button("Odpocznij!", key="btn_regen", use_container_width=True):
-                for m in player.regenerate():
-                    log(m)
-                st.session_state.day += 1
-                st.rerun()
+        return
 
-        st.markdown("---")
-        render_journal()
+    # ── Dzień walki ───────────────────────────────────────────────────────────
+    if day % 7 == 0:
+        if st.session_state.get("fight_day_npc_day") != day:
+            npc_preview = pick_npc_for_fight()
+            st.session_state.fight_day_npc = npc_preview
+            st.session_state.fight_day_npc_day = day
+        else:
+            npc_preview = st.session_state.fight_day_npc
+
+        st.markdown(
+            f'<div style="background:#1a0a0a;border:1px solid #e94560;border-radius:6px;'
+            f'padding:8px 12px;margin:4px 0;text-align:center;">'
+            f'<div style="font-family:Bebas Neue,sans-serif;font-size:1.1rem;color:#e94560;">'
+            f'🥊 DZIEŃ WALKI – Dzień {day}</div>'
+            f'<div style="font-size:0.8rem;color:#aaa;margin-top:3px;">'
+            f'Rywal: <b style="color:#fff;">{npc_preview.name}</b> · Lvl {npc_preview.level} · '
+            f'HP {npc_preview.max_hp} · Siła {npc_preview.effective_strength}</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+        lore_text = NPC_LORE.get(npc_preview.name)
+        if lore_text:
+            _lore(lore_text)
+        if st.button("🥊 WEJDŹ NA RING!", type="primary", use_container_width=True):
+            st.session_state.current_npc = npc_preview
+            st.session_state.battle_log = [
+                f"🎺 {player.name} vs {npc_preview.name} [Lvl {npc_preview.level}]",
+                f"Rywal: HP {npc_preview.current_hp} | Siła {npc_preview.effective_strength} | En {npc_preview.current_energy}",
+            ]
+            st.session_state.battle_over = False
+            st.session_state.battle_won = None
+            st.session_state.npc_adrenaline_streak = 0
+            npc_preview.restore_to_full()
+            st.session_state.phase = "battle"
+            st.rerun()
+
+    else:
+        # ── Akcje dnia ────────────────────────────────────────────────────────
+        st.markdown(
+            f'<div style="display:flex;align-items:center;gap:8px;margin:3px 0;">'
+            f'<span style="font-family:Bebas Neue,sans-serif;font-size:1rem;color:#fff;">'
+            f'Dzień {day}</span>'
+            f'<span style="color:#888;font-size:0.75rem;">Co robisz dzisiaj?</span>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            btn_train = st.button(
+                "🏋️\nTrening\n+40XP −25HP",
+                key="btn_train", use_container_width=True, type="primary"
+            )
+        with c2:
+            btn_walk = st.button(
+                "🚶\nSpacer\nPrzedmiot?",
+                key="btn_walk", use_container_width=True
+            )
+        with c3:
+            btn_regen = st.button(
+                "😴\nOdpoczynek\n+30HP +10En",
+                key="btn_regen", use_container_width=True
+            )
+
+        if btn_train:
+            for m in player.train(): log(m)
+            st.session_state.train_count += 1
+            if st.session_state.train_count % 2 == 0:
+                log(f"💬 {random.choice(TRENER_QUOTES)}")
+            st.session_state.day += 1
+            st.rerun()
+        elif btn_walk:
+            msgs, _ = player.walk()
+            for m in msgs: log(m)
+            player.spend_energy(min(5, player.current_energy))
+            log("🚶 Spacer: −5 Energii")
+            st.session_state.day += 1
+            st.rerun()
+        elif btn_regen:
+            for m in player.regenerate(): log(m)
+            st.session_state.day += 1
+            st.rerun()
+
+    # ── Dziennik ──────────────────────────────────────────────────────────────
+    render_journal()
+
 
 # ══════════════════════════════════════════════════════════════════════════════
-# PHASE: BATTLE
+# PHASE: BATTLE – mobile layout
 # ══════════════════════════════════════════════════════════════════════════════
 
 def phase_battle() -> None:
     player: Wrestler = st.session_state.player
     npc: Wrestler = st.session_state.current_npc
-    left, right = st.columns([5, 6], gap="medium")
 
-    with left:
-        render_player_panel()
+    # ── HUD gracza ────────────────────────────────────────────────────────────
+    render_hud(player, show_equip_btn=False)
 
-    with right:
-        st.markdown(f"## 🥊 {player.name} vs {npc.name}")
+    # ── Status walki – gracz vs NPC ──────────────────────────────────────────
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown(
+            f'<div style="font-size:0.75rem;font-weight:700;color:#fff;margin-bottom:2px;">'
+            f'🤼 {player.name}</div>' +
+            _mini_bar(player.current_hp, player.max_hp, "#e94560", "HP") +
+            _mini_bar(player.current_energy, player.max_energy, "#4ecdc4", "En"),
+            unsafe_allow_html=True,
+        )
+    with col2:
+        st.markdown(
+            f'<div style="font-size:0.75rem;font-weight:700;color:#f39c12;margin-bottom:2px;">'
+            f'⚔️ {npc.name} Lvl{npc.level}</div>' +
+            _mini_bar(npc.current_hp, npc.max_hp, "#f39c12", "HP") +
+            _mini_bar(npc.current_energy, npc.max_energy, "#9b59b6", "En"),
+            unsafe_allow_html=True,
+        )
 
-        # Pasek ostatniego wydarzenia z walki
-        if st.session_state.last_event:
-            st.markdown(
-                f'<div style="background:#1a1a2e;border-left:3px solid #f39c12;'
-                f'border-radius:0 6px 6px 0;padding:7px 12px;margin-bottom:8px;'
-                f'color:#f39c12;font-size:0.9rem;font-weight:600;">'
-                f'📢 {st.session_state.last_event}</div>',
-                unsafe_allow_html=True,
-            )
+    # ── Pasek ostatniego wydarzenia ───────────────────────────────────────────
+    _last_event_bar()
 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown(f"**{player.name}**")
-            st.markdown(
-                _bar(player.current_hp, player.max_hp, "hp-bar", "❤️ HP") +
-                _bar(player.current_energy, player.max_energy, "en-bar", "⚡ Stamina"),
-                unsafe_allow_html=True,
-            )
-        with col2:
-            st.markdown(f"**{npc.name}** · Lvl {npc.level}")
-            st.markdown(
-                _bar(npc.current_hp, npc.max_hp, "npc-bar", "❤️ HP") +
-                _bar(npc.current_energy, npc.max_energy, "npc-en-bar", "⚡ Stamina"),
-                unsafe_allow_html=True,
-            )
+    # ── Log walki ─────────────────────────────────────────────────────────────
+    if st.session_state.battle_log:
+        battle_html = "<br>".join(st.session_state.battle_log[-15:])
+        st.markdown(
+            f'<div class="journal-box" style="height:130px;margin:4px 0;">{battle_html}</div>',
+            unsafe_allow_html=True,
+        )
 
-        if st.session_state.battle_log:
-            battle_html = "<br>".join(st.session_state.battle_log[-25:])
-            st.markdown(
-                f'<div class="journal-box" style="height:175px;">{battle_html}</div>',
-                unsafe_allow_html=True,
-            )
+    # ── Koniec walki ──────────────────────────────────────────────────────────
+    if st.session_state.battle_over:
+        if st.session_state.battle_won:
+            st.success("🏆 Wygrałeś!")
+        else:
+            st.error("💀 Przegrałeś...")
+        if st.button("Kontynuuj →", type="primary", use_container_width=True):
+            st.session_state.day += 1
+            st.session_state.phase = "game"
+            st.session_state.show_equip = False
+            st.rerun()
+        render_journal()
+        return
 
-        if st.session_state.battle_over:
-            if st.session_state.battle_won:
-                st.success("🏆 Wygrałeś walkę!")
-            else:
-                st.error("💀 Przegrałeś walkę...")
-            if st.button("Kontynuuj →", type="primary"):
-                st.session_state.day += 1
-                st.session_state.phase = "game"
+    # ── Akcje walki ───────────────────────────────────────────────────────────
+    st.markdown(
+        '<div style="font-size:0.72rem;color:#888;margin:4px 0;">Wybierz akcję:</div>',
+        unsafe_allow_html=True,
+    )
+
+    # Ruchy w jednym rzędzie
+    move_cols = st.columns(len(player.moves))
+    for i, move in enumerate(player.moves):
+        with move_cols[i]:
+            disabled = player.current_energy < move.energy_cost
+            label = f"{move.name}\n{move.energy_cost}⚡"
+            if st.button(label, key=f"move_{i}", disabled=disabled, use_container_width=True):
+                _execute_player_turn(move, player, npc)
                 st.rerun()
-            return
 
-        st.markdown("##### Twoja akcja:")
-        move_cols = st.columns(len(player.moves))
-        for i, move in enumerate(player.moves):
-            with move_cols[i]:
-                if st.button(
-                    f"{move.name}\n({move.energy_cost}⚡)",
-                    key=f"move_{i}",
-                    disabled=player.current_energy < move.energy_cost,
-                    use_container_width=True,
-                ):
-                    _execute_player_turn(move, player, npc)
-                    st.rerun()
-
-        fin = player.finisher
+    # Finisher + Adrenalina w jednym rzędzie
+    fin = player.finisher
+    col_fin, col_adr = st.columns(2)
+    with col_fin:
         if fin:
             fin_ok = npc.hp_percentage < 35 and player.current_energy >= fin.energy_cost
             if st.button(
-                f"💥 FINISHER: {fin.name}  ({fin.energy_cost}⚡)",
+                f"💥 {fin.name}\n{fin.energy_cost}⚡",
                 disabled=not fin_ok,
                 type="primary" if fin_ok else "secondary",
                 use_container_width=True,
+                key="btn_fin",
             ):
                 _execute_player_turn(fin, player, npc)
                 st.rerun()
-
-        if st.button("⚡ ADRENALINA  (+30 HP, +5 En)", key="adrenaline",
-                     use_container_width=True):
+    with col_adr:
+        if st.button("⚡ ADRENALINA\n+30HP +25En", key="adrenaline", use_container_width=True):
             blog(player.adrenaline_rush())
             _npc_turn(npc, player)
             st.rerun()
 
-        st.markdown("---")
-        render_journal()
-
-# ══════════════════════════════════════════════════════════════════════════════
-# COMBAT LOGIC
-# ══════════════════════════════════════════════════════════════════════════════
+    # ── Dziennik ──────────────────────────────────────────────────────────────
+    render_journal()
 
 def _execute_player_turn(move, player: Wrestler, npc: Wrestler) -> None:
     try:
@@ -1384,7 +1413,9 @@ def main() -> None:
     elif phase == "intro":   phase_intro()
     elif phase == "game":    phase_game()
     elif phase == "battle":  phase_battle()
-    else: st.error(f"Nieznana faza: {phase}")
+    else:
+        st.session_state.phase = "splash"
+        st.rerun()
 
 if __name__ == "__main__":
     main()
