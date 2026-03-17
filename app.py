@@ -354,6 +354,7 @@ def _init_state() -> None:
         "fight_day_npc": None,
         "fight_day_npc_day": -1,
         "npc_adrenaline_streak": 0,
+        "last_event": "",
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -363,6 +364,11 @@ _init_state()
 
 def log(msg: str) -> None:
     st.session_state.journal.insert(0, msg)
+    # Ważne wydarzenia trafiają też do paska
+    if any(x in msg for x in ["🏆", "⭐", "💥", "🎁", "🥊", "💀", "📖", "🏅"]):
+        import re
+        clean = re.sub(r"<[^>]+>", "", msg).strip()
+        st.session_state.last_event = clean
 
 def blog(msg: str) -> None:
     st.session_state.battle_log.append(msg)
@@ -1044,6 +1050,16 @@ def phase_game() -> None:
     with right:
         st.markdown(f"## 📅 Dzień {day}")
 
+        # Pasek ostatniego wydarzenia
+        if st.session_state.last_event:
+            st.markdown(
+                f'<div style="background:#1a1a2e;border-left:3px solid #f39c12;'
+                f'border-radius:0 6px 6px 0;padding:7px 12px;margin-bottom:8px;'
+                f'color:#f39c12;font-size:0.9rem;font-weight:600;">'
+                f'📢 {st.session_state.last_event}</div>',
+                unsafe_allow_html=True,
+            )
+
         # Chapter transition
         declined_day = st.session_state.get("chapter2_declined_day", -99)
         recently_declined = (st.session_state.day - declined_day) < 7
@@ -1162,6 +1178,16 @@ def phase_battle() -> None:
 
     with right:
         st.markdown(f"## 🥊 {player.name} vs {npc.name}")
+
+        # Pasek ostatniego wydarzenia z walki
+        if st.session_state.last_event:
+            st.markdown(
+                f'<div style="background:#1a1a2e;border-left:3px solid #f39c12;'
+                f'border-radius:0 6px 6px 0;padding:7px 12px;margin-bottom:8px;'
+                f'color:#f39c12;font-size:0.9rem;font-weight:600;">'
+                f'📢 {st.session_state.last_event}</div>',
+                unsafe_allow_html=True,
+            )
 
         col1, col2 = st.columns(2)
         with col1:
@@ -1299,7 +1325,7 @@ def _resolve_battle(won: bool, player: Wrestler, npc: Wrestler) -> None:
     st.session_state.battle_won = won
 
     if won:
-        xp_reward = 50 + npc.level * 10
+        xp_reward = 70 + npc.level * 15
         for m in player.gain_xp(xp_reward):
             blog(m); log(m)
 
