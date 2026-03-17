@@ -531,9 +531,9 @@ class Powerhouse(Wrestler):
     def __init__(self, name: str) -> None:
         super().__init__(
             name=name,
-            base_strength=18,
+            base_strength=16,
             base_dexterity=6,
-            base_hp=140,
+            base_hp=135,
             base_energy=80,
         )
 
@@ -581,9 +581,9 @@ class Technician(Wrestler):
     def __init__(self, name: str) -> None:
         super().__init__(
             name=name,
-            base_strength=13,
+            base_strength=15,
             base_dexterity=15,
-            base_hp=120,
+            base_hp=125,
             base_energy=100,
         )
 
