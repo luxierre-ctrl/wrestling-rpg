@@ -120,6 +120,20 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+# Wymuś ciemny motyw – nadpisz jasne kolory Streamlita
+st.markdown("""
+<style>
+/* Wymuś ciemne tło nawet gdy Streamlit Cloud ładuje jasny motyw */
+html, body, [data-testid="stAppViewContainer"], 
+[data-testid="stMain"], .main, 
+[data-testid="stHeader"] {
+    background-color: #0f0f1a !important;
+    color: #eeeeee !important;
+}
+[data-testid="stSidebar"] { background-color: #1a1a2e !important; }
+</style>
+""", unsafe_allow_html=True)
+
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;600;700&display=swap');
@@ -134,11 +148,19 @@ h2 { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem !important; margin
 h3 { font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem !important; margin-bottom: 0.25rem !important; }
 
 .main .block-container {
-    max-width: 1140px;
+    max-width: 860px;
     padding-top: 0.6rem;
     padding-bottom: 1rem;
     padding-left: 1rem;
     padding-right: 1rem;
+}
+
+/* Desktop: ogranicz szerokość do telefono-podobnej */
+@media (min-width: 769px) {
+    .main .block-container {
+        max-width: 520px !important;
+        margin: 0 auto !important;
+    }
 }
 
 /* ── MOBILE COMPACT ── */
@@ -900,15 +922,15 @@ def phase_intro() -> None:
 # ══════════════════════════════════════════════════════════════════════════════
 
 def _mini_bar(current: int, maximum: int, color: str, label: str) -> str:
-    """Kompaktowy pasek statystyki."""
+    """Kompaktowy pasek statystyki – pasek max 60% szerokości, liczby obok."""
     pct = int((current / maximum) * 100) if maximum > 0 else 0
     return (
-        f'<div style="display:flex;align-items:center;gap:5px;margin:2px 0;">'
-        f'<span style="color:#888;font-size:0.68rem;min-width:22px;">{label}</span>'
-        f'<div style="flex:1;background:#2a2a3a;border-radius:3px;height:8px;">'
-        f'<div style="width:{pct}%;background:{color};border-radius:3px;height:8px;"></div>'
+        f'<div style="display:flex;align-items:center;gap:4px;margin:2px 0;">'
+        f'<span style="color:#888;font-size:0.65rem;width:18px;flex-shrink:0;">{label}</span>'
+        f'<div style="width:55%;background:#2a2a3a;border-radius:3px;height:7px;flex-shrink:0;">'
+        f'<div style="width:{pct}%;background:{color};border-radius:3px;height:7px;"></div>'
         f'</div>'
-        f'<span style="color:#aaa;font-size:0.68rem;min-width:50px;text-align:right;">{current}/{maximum}</span>'
+        f'<span style="color:#aaa;font-size:0.65rem;white-space:nowrap;">{current}/{maximum}</span>'
         f'</div>'
     )
 
@@ -958,32 +980,27 @@ def render_hud(player: "Wrestler", show_equip_btn: bool = True) -> None:
         unsafe_allow_html=True,
     )
 
-    # ── WIERSZ 2: Statystyki (lewo) + Info (prawo) ───────────────────────────
-    col_stats, col_info = st.columns([3, 2])
-
-    with col_stats:
-        # XP, HP, Energia – ciasno
-        st.markdown(
-            _mini_bar(player.xp, xp_needed or player.xp or 1, "#9b59b6", "XP") +
-            _mini_bar(player.current_hp, player.max_hp, "#e94560", "HP") +
-            _mini_bar(player.current_energy, player.max_energy, "#4ecdc4", "En"),
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            f'<div style="color:#888;font-size:0.65rem;margin-top:2px;">'
-            f'💪 {player.effective_strength} &nbsp;·&nbsp; 🤸 {player.effective_dexterity}</div>',
-            unsafe_allow_html=True,
-        )
-
-    with col_info:
-        st.markdown(
-            f'''<div style="font-size:0.72rem;line-height:1.7;color:#aaa;text-align:right;">
-                <div style="color:#fff;font-weight:700;font-size:0.78rem;">{location}</div>
-                <div style="color:#4ecdc4;">{wins_label} &nbsp; LVL {player.level}</div>
+    # ── WIERSZ 2: Statystyki + Info w jednym HTML bloku ─────────────────────
+    st.markdown(
+        f'''<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:4px;">
+            <!-- Paski -->
+            <div style="flex:1;min-width:0;">
+                {_mini_bar(player.xp, xp_needed or player.xp or 1, "#9b59b6", "XP")}
+                {_mini_bar(player.current_hp, player.max_hp, "#e94560", "HP")}
+                {_mini_bar(player.current_energy, player.max_energy, "#4ecdc4", "En")}
+                <div style="color:#888;font-size:0.63rem;margin-top:1px;">
+                    💪{player.effective_strength} · 🤸{player.effective_dexterity}
+                </div>
+            </div>
+            <!-- Info po prawej -->
+            <div style="text-align:right;flex-shrink:0;font-size:0.7rem;line-height:1.6;">
+                <div style="color:#fff;font-weight:700;">{location}</div>
+                <div style="color:#4ecdc4;">{wins_label} · LVL {player.level}</div>
                 <div style="color:#f39c12;">{xp_txt} XP</div>
-            </div>''',
-            unsafe_allow_html=True,
-        )
+            </div>
+        </div>''',
+        unsafe_allow_html=True,
+    )
 
     st.markdown('<div style="border-top:1px solid #222;margin:5px 0;"></div>', unsafe_allow_html=True)
 
