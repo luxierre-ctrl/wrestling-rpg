@@ -473,7 +473,7 @@ def phase_splash() -> None:
     elif step == 1:
         st.markdown(
             f'''<div class="splash-game">
-                <img src="data:image/png;base64,{LOGO_GAME_B64}" alt="Squared Circle Wrestling RPG"/>TEST TEST
+                <img src="data:image/png;base64,{LOGO_GAME_B64}" alt="Squared Circle Wrestling RPG"/>Drogi przyjacielu. Jesli to czytasz to znaczy ze poprosilem Cie o  zapoznanie sie z ta wersja prepreprepreprekurwaalpha gry ktora w sumie powstaje przypadkiem. Nie wiem czy zostanie ona ukonczona czy nie,. ale jesli masz jakies sugestie, pomysly i chcesz mi pomoc w dokonczeniu tej gry to zapraszam do kontaktu
             </div>''',
             unsafe_allow_html=True,
         )
@@ -502,7 +502,7 @@ def phase_intro() -> None:
     # ── KROK 0: Tytuł i początek ─────────────────────────────────────────────
     if step == 0:
         st.markdown('<div class="intro-title">SQUARED CIRCLE</div>', unsafe_allow_html=True)
-        st.markdown('<div class="intro-subtitle"WRESTLING RPG</div>', unsafe_allow_html=True)
+        st.markdown('<div class="intro-subtitle">WRESTLING RPG</div>', unsafe_allow_html=True)
 
         _scene(
             '<span class="scene-time">RADOM. WTOREK. 23:14.</span>'
