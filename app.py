@@ -473,7 +473,7 @@ def phase_splash() -> None:
     elif step == 1:
         st.markdown(
             f'''<div class="splash-game">
-                <img src="data:image/png;base64,{LOGO_GAME_B64}" alt="Squared Circle Wrestling RPG"/>
+                <img src="data:image/png;base64,{LOGO_GAME_B64}" alt="Squared Circle Wrestling RPG"/>TEST TEST
             </div>''',
             unsafe_allow_html=True,
         )
@@ -501,8 +501,8 @@ def phase_intro() -> None:
 
     # ── KROK 0: Tytuł i początek ─────────────────────────────────────────────
     if step == 0:
-        st.markdown('<div class="intro-title">WRESTLING RPG</div>', unsafe_allow_html=True)
-        st.markdown('<div class="intro-subtitle">Droga na szczyt</div>', unsafe_allow_html=True)
+        st.markdown('<div class="intro-title">SQUARED CIRCLE</div>', unsafe_allow_html=True)
+        st.markdown('<div class="intro-subtitle"WRESTLING RPG</div>', unsafe_allow_html=True)
 
         _scene(
             '<span class="scene-time">RADOM. WTOREK. 23:14.</span>'
