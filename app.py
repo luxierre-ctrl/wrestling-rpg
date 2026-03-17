@@ -135,10 +135,40 @@ h3 { font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem !important; margin
 
 .main .block-container {
     max-width: 1140px;
-    padding-top: 0.9rem;
-    padding-bottom: 1.2rem;
-    padding-left: 1.8rem;
-    padding-right: 1.8rem;
+    padding-top: 0.6rem;
+    padding-bottom: 1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+/* ── MOBILE COMPACT ── */
+@media (max-width: 768px) {
+    .main .block-container {
+        padding-left: 0.4rem !important;
+        padding-right: 0.4rem !important;
+        padding-top: 0.3rem !important;
+    }
+    /* Metryki w 2 kolumnach na telefonie */
+    div[data-testid="metric-container"] {
+        padding: 3px 4px !important;
+    }
+    div[data-testid="metric-container"] [data-testid="stMetricValue"] {
+        font-size: 1rem !important;
+    }
+    /* Mniejsze przyciski na tel */
+    div[data-testid="stButton"] > button {
+        font-size: 0.75rem !important;
+        padding: 0.2rem 0.4rem !important;
+    }
+    /* Mniejsze bary */
+    .bar-bg { height: 7px !important; margin: 1px 0 4px 0 !important; }
+    .hp-bar, .en-bar, .npc-bar, .npc-en-bar { height: 7px !important; }
+    /* Kompaktowe stat-boxy */
+    .stat-box { padding: 4px 8px !important; font-size: 0.78rem !important; margin: 2px 0 !important; }
+    /* Dziennik mniejszy na tel */
+    .journal-box { height: 220px !important; font-size: 0.76rem !important; }
+    /* Lore box */
+    .lore-box { padding: 7px 10px !important; font-size: 0.8rem !important; }
 }
 
 .stMarkdown p { font-size: 0.9rem; margin-bottom: 0.25rem; }
@@ -251,7 +281,7 @@ button[data-baseweb="tab"] {
     border: 1px solid #2a2a3e;
     border-radius: 6px;
     padding: 10px 14px;
-    height: 400px;
+    height: 300px;
     overflow-y: auto;
     color: #bbb;
     font-size: 0.84rem;
@@ -323,6 +353,7 @@ def _init_state() -> None:
         "chapter2_declined_day": -99,
         "fight_day_npc": None,
         "fight_day_npc_day": -1,
+        "npc_adrenaline_streak": 0,
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -834,55 +865,92 @@ def render_player_panel() -> None:
     if player is None:
         return
 
-    chapter_label = "Rozdział I – Szkoła" if st.session_state.chapter == 1 else "Rozdział II – Federacja"
-    st.markdown(f'<span class="chapter-badge">{chapter_label}</span>', unsafe_allow_html=True)
-    st.markdown(f"### 🤼 {player.name}")
-    st.caption(f"{player.character_class} · Poziom {player.level}")
-
     from game.characters import XP_THRESHOLDS
-    if player.level < len(XP_THRESHOLDS):
-        xp_needed = XP_THRESHOLDS[player.level]
-        st.caption(f"XP: {player.xp} / {xp_needed}")
-        st.progress(min(int((player.xp / xp_needed) * 100), 100))
-    else:
-        st.caption("XP: MAX ⭐")
+
+    chapter_label = "R.I – Szkoła" if st.session_state.chapter == 1 else "R.II – Federacja"
+
+    # ── Nagłówek: badge + imię + klasa w jednej linii ────────────────────────
+    xp_needed = XP_THRESHOLDS[player.level] if player.level < len(XP_THRESHOLDS) else None
+    xp_pct = int((player.xp / xp_needed) * 100) if xp_needed else 100
+    xp_txt = f"{player.xp}/{xp_needed}" if xp_needed else "MAX ⭐"
 
     st.markdown(
-        _bar(player.current_hp, player.max_hp, "hp-bar", "❤️ HP") +
-        _bar(player.current_energy, player.max_energy, "en-bar", "⚡ Energia"),
+        f'''<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
+            <span class="chapter-badge">{chapter_label}</span>
+            <span style="font-family:Bebas Neue,sans-serif;font-size:1.2rem;color:#fff;">🤼 {player.name}</span>
+            <span style="color:#888;font-size:0.75rem;">{player.character_class} · Lvl {player.level}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <span style="color:#888;font-size:0.72rem;white-space:nowrap;">XP {xp_txt}</span>
+            <div style="flex:1;background:#2a2a3a;border-radius:3px;height:6px;">
+                <div style="width:{min(xp_pct,100)}%;background:#e94560;border-radius:3px;height:6px;"></div>
+            </div>
+        </div>''',
         unsafe_allow_html=True,
     )
-    st.markdown("---")
 
+    # ── HP + Energia w jednym bloku ──────────────────────────────────────────
+    st.markdown(
+        _bar(player.current_hp, player.max_hp, "hp-bar", "❤️ HP") +
+        _bar(player.current_energy, player.max_energy, "en-bar", "⚡ En"),
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("---")
     tab_char, tab_equip = st.tabs(["👤 Postać", "🎽 Ekwipunek"])
 
     with tab_char:
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("💪 Siła", player.effective_strength)
-            st.metric("❤️ Max HP", player.max_hp)
-        with col2:
-            st.metric("🤸 Zręczność", player.effective_dexterity)
-            st.metric("⚡ Max En.", player.max_energy)
-
-        st.markdown("**🥊 Ruchy:**")
-        for m in player.moves:
-            st.markdown(
-                f'<div class="stat-box">• {m.name}<br>'
-                f'<span class="stat-label">{m.energy_cost}⚡ · ×{m.damage_multiplier} Siły</span></div>',
-                unsafe_allow_html=True,
-            )
-        if player.finisher:
-            st.markdown(
-                f'<div class="stat-box" style="border-color:#f39c12;">💥 {player.finisher.name}<br>'
-                f'<span class="stat-label" style="color:#f39c12;">FINISHER · {player.finisher.energy_cost}⚡ · ×{player.finisher.damage_multiplier}</span></div>',
-                unsafe_allow_html=True,
-            )
-        passive = player.passive_skill
-        st.markdown("---")
+        # 4 statystyki w zwartym HTML – bez st.metric żeby nie zajmowały za dużo miejsca
         st.markdown(
-            f'<div class="stat-box" style="border-color:#4ecdc4;">🌟 {passive.name}<br>'
-            f'<span style="color:#aaa;font-size:0.78rem">{passive.description}</span></div>',
+            f'''<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:8px;">
+                <div class="stat-box" style="text-align:center;">
+                    <div class="stat-label">💪 Siła</div>
+                    <div style="font-size:1.3rem;font-weight:700;color:#fff;">{player.effective_strength}</div>
+                </div>
+                <div class="stat-box" style="text-align:center;">
+                    <div class="stat-label">🤸 Zręczność</div>
+                    <div style="font-size:1.3rem;font-weight:700;color:#fff;">{player.effective_dexterity}</div>
+                </div>
+                <div class="stat-box" style="text-align:center;">
+                    <div class="stat-label">❤️ Max HP</div>
+                    <div style="font-size:1.3rem;font-weight:700;color:#e94560;">{player.max_hp}</div>
+                </div>
+                <div class="stat-box" style="text-align:center;">
+                    <div class="stat-label">⚡ Max En.</div>
+                    <div style="font-size:1.3rem;font-weight:700;color:#4ecdc4;">{player.max_energy}</div>
+                </div>
+            </div>''',
+            unsafe_allow_html=True,
+        )
+
+        # Ruchy + finisher w jednym bloku HTML
+        moves_html = "".join(
+            f'<div style="display:flex;justify-content:space-between;align-items:center;'
+            f'padding:3px 8px;border-bottom:1px solid #222;">'
+            f'<span style="font-size:0.82rem;color:#ddd;">• {m.name}</span>'
+            f'<span class="stat-label">{m.energy_cost}⚡ ×{m.damage_multiplier}</span></div>'
+            for m in player.moves
+        )
+        fin = player.finisher
+        fin_html = (
+            f'<div style="display:flex;justify-content:space-between;align-items:center;'
+            f'padding:3px 8px;background:#1a1200;">'
+            f'<span style="font-size:0.82rem;color:#f39c12;">💥 {fin.name}</span>'
+            f'<span style="color:#f39c12;font-size:0.7rem;font-weight:700;">{fin.energy_cost}⚡ ×{fin.damage_multiplier}</span></div>'
+        ) if fin else ""
+
+        passive = player.passive_skill
+        st.markdown(
+            f'''<div class="stat-box" style="padding:0;overflow:hidden;">
+                <div style="padding:4px 8px;border-bottom:1px solid #e94560;">
+                    <span class="stat-label">🥊 Ruchy</span>
+                </div>
+                {moves_html}{fin_html}
+            </div>
+            <div class="stat-box" style="border-color:#4ecdc4;margin-top:4px;padding:4px 8px;">
+                <span class="stat-label" style="color:#4ecdc4;">🌟 {passive.name}</span>
+                <br><span style="color:#888;font-size:0.75rem;">{passive.description}</span>
+            </div>''',
             unsafe_allow_html=True,
         )
 
@@ -940,7 +1008,8 @@ def render_journal() -> None:
 def phase_game() -> None:
     player: Wrestler = st.session_state.player
     day = st.session_state.day
-    left, right = st.columns([5, 6], gap="medium")
+    # Na telefonie [5,6] jest OK – Streamlit stackuje je automatycznie
+    left, right = st.columns([5, 6], gap="small")
 
     with left:
         render_player_panel()
@@ -1007,7 +1076,8 @@ def phase_game() -> None:
                 ]
                 st.session_state.battle_over = False
                 st.session_state.battle_won = None
-                # FIX 5: NIE regeneruj przed walką – gracz idzie z tym co ma
+                st.session_state.npc_adrenaline_streak = 0
+                # NIE regeneruj gracza przed walką – idzie z tym co ma
                 npc_preview.restore_to_full()
                 st.session_state.phase = "battle"
                 st.rerun()
@@ -1153,17 +1223,46 @@ def _execute_player_turn(move, player: Wrestler, npc: Wrestler) -> None:
 
 def _npc_turn(npc: Wrestler, player: Wrestler) -> None:
     affordable = [m for m in npc.moves if npc.current_energy >= m.energy_cost]
-    if not affordable and npc.hp_percentage < 40:
+
+    # Adrenalina TYLKO gdy: brak ruchów na stanie LUB bardzo mało HP i energii
+    # Ale NIE częściej niż co 2 tury – żeby nie zapętlić się w adrenalinie
+    npc_adrenaline_count = st.session_state.get("npc_adrenaline_streak", 0)
+
+    should_adrenaline = (
+        not affordable
+        or (npc.hp_percentage < 20 and npc.current_energy < 15)
+    )
+    # Jeśli użył adrenaliny 2 razy z rzędu – wymuś atak nawet najtańszym ruchem
+    if npc_adrenaline_count >= 2:
+        should_adrenaline = False
+
+    if should_adrenaline:
         npc.heal(30)
-        npc.restore_energy(5)
-        blog(f"[{npc.name}] ⚡ Adrenalina! +30 HP ({npc.current_hp}/{npc.max_hp})")
+        npc.restore_energy(20)  # więcej energii żeby mógł zaatakować w następnej turze
+        st.session_state.npc_adrenaline_streak = npc_adrenaline_count + 1
+        blog(f"[{npc.name}] ⚡ Adrenalina! +30 HP, +20 En ({npc.current_hp}/{npc.max_hp} HP)")
         return
+
+    # Reset streak gdy atakuje
+    st.session_state.npc_adrenaline_streak = 0
+
+    # Jeśli nadal nie ma affordowalnych po resecie – użyj najtańszego ruchu za darmo (panic move)
+    if not affordable:
+        cheapest = min(npc.moves, key=lambda m: m.energy_cost)
+        npc._current_energy = cheapest.energy_cost  # daj dokładnie tyle energii
+        affordable = [cheapest]
+
     try:
         blog(f"[{npc.name}] {npc_choose_move(npc, player).apply(npc, player)}")
     except (InsufficientEnergyError, FinisherNotAvailableError):
-        npc.heal(30)
-        npc.restore_energy(5)
-        blog(f"[{npc.name}] ⚡ Adrenalina!")
+        # Ostatnia deska – słaby cios
+        cheapest = min(npc.moves, key=lambda m: m.energy_cost)
+        npc._current_energy = cheapest.energy_cost
+        try:
+            blog(f"[{npc.name}] {cheapest.apply(npc, player)}")
+        except Exception:
+            blog(f"[{npc.name}] walczy z ostatnich sił...")
+
     if not player.is_alive:
         _resolve_battle(won=False, player=player, npc=npc)
 
