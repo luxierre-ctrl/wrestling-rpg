@@ -1,5 +1,5 @@
 """
-Wrestling RPG – Main Streamlit Application.
+Squared Circle: Wrestling RPG – Main Streamlit Application.
 v4 – kinematyczny wstęp, park/Kaz/piwnica, system intro_step
 """
 
@@ -114,7 +114,7 @@ CHAMPIONSHIP_STORY = {
 # ══════════════════════════════════════════════════════════════════════════════
 
 st.set_page_config(
-    page_title="Wrestling RPG",
+    page_title="Squared Circle",
     page_icon="🤼",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -378,10 +378,26 @@ def next_intro() -> None:
 def pick_npc_for_fight() -> Wrestler:
     player: Wrestler = st.session_state.player
     roster: list[Wrestler] = st.session_state.npc_roster
+    school_wins = st.session_state.school_wins
+
     if st.session_state.chapter == 1:
-        pool = [n for n in roster if n.level <= max(2, player.level)]
+        # Pierwsze 2 wygrane – TYLKO Lvl 1 rywale
+        # Potem – do Lvl player+1 (stopniowe trudniejsze)
+        if school_wins < 2:
+            pool = [n for n in roster if n.level == 1]
+        elif school_wins < 4:
+            pool = [n for n in roster if n.level <= 2]
+        else:
+            pool = [n for n in roster if n.level <= max(2, player.level)]
     else:
-        pool = [n for n in roster if n.level >= 3]
+        fed_wins = st.session_state.federation_wins
+        if fed_wins < 2:
+            pool = [n for n in roster if n.level == 3]
+        elif fed_wins < 5:
+            pool = [n for n in roster if 3 <= n.level <= 4]
+        else:
+            pool = [n for n in roster if n.level >= 4]
+
     pool = pool or roster
     npc = random.choice(pool)
     npc.restore_to_full()
@@ -426,9 +442,14 @@ def phase_splash() -> None:
         from { opacity: 0; transform: translateY(24px); }
         to   { opacity: 1; transform: translateY(0); }
     }
+    .splash-creator {
+        text-align: center;
+        width: 100%;
+    }
     .splash-creator img {
         max-width: 460px;
         width: 75vw;
+        display: inline-block;
         animation: fadeIn 1.2s ease forwards;
     }
     .splash-presents {
@@ -439,10 +460,16 @@ def phase_splash() -> None:
         margin-top: 1rem;
         animation: fadeIn 1.5s ease 0.8s both;
         text-transform: uppercase;
+        text-align: center;
+    }
+    .splash-game {
+        text-align: center;
+        width: 100%;
     }
     .splash-game img {
         max-width: 800px;
         width: 88vw;
+        display: inline-block;
         animation: fadeIn 1.4s ease forwards;
         border-radius: 10px;
     }
@@ -501,8 +528,8 @@ def phase_intro() -> None:
 
     # ── KROK 0: Tytuł i początek ─────────────────────────────────────────────
     if step == 0:
-        st.markdown('<div class="intro-title">WRESTLING RPG</div>', unsafe_allow_html=True)
-        st.markdown('<div class="intro-subtitle">Droga na szczyt</div>', unsafe_allow_html=True)
+        st.markdown('<div class="intro-title">SQUARED CIRCLE</div>', unsafe_allow_html=True)
+        st.markdown('<div class="intro-subtitle">Wrestling RPG &nbsp;&middot;&nbsp; Droga na szczyt</div>', unsafe_allow_html=True)
 
         _scene(
             '<span class="scene-time">RADOM. WTOREK. 23:14.</span>'
