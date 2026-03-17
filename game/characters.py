@@ -556,9 +556,9 @@ class HighFlyer(Wrestler):
     def __init__(self, name: str) -> None:
         super().__init__(
             name=name,
-            base_strength=10,
+            base_strength=14,
             base_dexterity=18,
-            base_hp=100,
+            base_hp=108,
             base_energy=120,
         )
 
@@ -600,7 +600,11 @@ class Technician(Wrestler):
 # NPC factory
 # ---------------------------------------------------------------------------
 
-def _make_npc(cls: type, name: str, level: int, moves_idx: list[int], fin_idx: int) -> Wrestler:
+def _make_npc(
+    cls: type, name: str, level: int,
+    moves_idx: list[int], fin_idx: int,
+    stat_scale: float = 1.0
+) -> Wrestler:
     """Helper: create an NPC of given class, level, and move selection.
     
     Args:
@@ -609,15 +613,21 @@ def _make_npc(cls: type, name: str, level: int, moves_idx: list[int], fin_idx: i
         level: Level to set the NPC to.
         moves_idx: Indices of moves to pick from class catalogue.
         fin_idx: Index of finisher to pick.
+        stat_scale: Scale factor for base stats (0.7 = 70% of normal).
         
     Returns:
         Fully configured NPC Wrestler.
     """
     from game.skills import MOVES_CATALOGUE, FINISHER_CATALOGUE
     npc = cls(name)
-    # Force level without XP tracking
     npc._level = level  # type: ignore[attr-defined]
-    # Level-up stat inflation is handled via level_up_bonus()
+
+    # Skaluj statystyki bazowe NPC
+    if stat_scale != 1.0:
+        npc._base_strength = max(5, int(npc._base_strength * stat_scale))
+        npc._base_hp = max(50, int(npc._base_hp * stat_scale))
+        npc._base_energy = max(40, int(npc._base_energy * stat_scale))
+        npc._base_dexterity = max(4, int(npc._base_dexterity * stat_scale))
 
     class_name = npc.character_class
     available_moves = MOVES_CATALOGUE[class_name]
@@ -637,28 +647,28 @@ def build_npc_roster() -> list[Wrestler]:
         List of NPC wrestlers, from weakest to strongest.
     """
     roster: list[Wrestler] = [
-        # Chapter 1 – School (weak trainees)
-        _make_npc(Powerhouse, "Rocky Bułka",        level=1, moves_idx=[0,4,7], fin_idx=2),
-        _make_npc(HighFlyer,  "Timmy Flip",          level=1, moves_idx=[0,6,3], fin_idx=0),
-        _make_npc(Technician, "Grzegorz Dźwignia",   level=1, moves_idx=[0,2,7], fin_idx=0),
-        _make_npc(Powerhouse, "Bartek Mocarz",        level=2, moves_idx=[1,3,5], fin_idx=0),
-        _make_npc(HighFlyer,  "Salto Stasiu",         level=2, moves_idx=[1,4,8], fin_idx=1),
+        # Szkoła – wyraźnie słabsi, stat_scale obniża ich statystyki bazowe
+        _make_npc(Powerhouse, "Rocky Bułka",        level=1, moves_idx=[0,4,7], fin_idx=2, stat_scale=0.55),
+        _make_npc(HighFlyer,  "Timmy Flip",          level=1, moves_idx=[0,6,3], fin_idx=0, stat_scale=0.55),
+        _make_npc(Technician, "Grzegorz Dźwignia",   level=1, moves_idx=[0,2,7], fin_idx=0, stat_scale=0.55),
+        _make_npc(Powerhouse, "Bartek Mocarz",        level=2, moves_idx=[1,3,5], fin_idx=0, stat_scale=0.72),
+        _make_npc(HighFlyer,  "Salto Stasiu",         level=2, moves_idx=[1,4,8], fin_idx=1, stat_scale=0.72),
 
-        # Mid-tier opponents
-        _make_npc(Technician, "Adam Dusiciел",        level=3, moves_idx=[1,5,8], fin_idx=1),
-        _make_npc(Powerhouse, "Wielki Zbyszek",       level=3, moves_idx=[2,5,9], fin_idx=1),
-        _make_npc(HighFlyer,  "Lotny Krzysztof",      level=3, moves_idx=[2,7,9], fin_idx=2),
+        # Środek – normalny balans
+        _make_npc(Technician, "Adam Dusiciel",        level=3, moves_idx=[1,5,8], fin_idx=1, stat_scale=0.90),
+        _make_npc(Powerhouse, "Wielki Zbyszek",       level=3, moves_idx=[2,5,9], fin_idx=1, stat_scale=0.90),
+        _make_npc(HighFlyer,  "Lotny Krzysztof",      level=3, moves_idx=[2,7,9], fin_idx=2, stat_scale=0.90),
 
-        # Chapter 2 – Local Federation
-        _make_npc(Technician, "Mistrz Janusz",        level=4, moves_idx=[3,6,8], fin_idx=2),
-        _make_npc(Powerhouse, "Destruktor Marek",     level=4, moves_idx=[0,2,5], fin_idx=0),
-        _make_npc(HighFlyer,  "Feniks Radek",         level=5, moves_idx=[3,7,9], fin_idx=2),
-        _make_npc(Technician, "Żelazny Piotr",        level=5, moves_idx=[4,6,9], fin_idx=0),
+        # Federacja – pełne statystyki
+        _make_npc(Technician, "Mistrz Janusz",        level=4, moves_idx=[3,6,8], fin_idx=2, stat_scale=1.00),
+        _make_npc(Powerhouse, "Destruktor Marek",     level=4, moves_idx=[0,2,5], fin_idx=0, stat_scale=1.00),
+        _make_npc(HighFlyer,  "Feniks Radek",         level=5, moves_idx=[3,7,9], fin_idx=2, stat_scale=1.05),
+        _make_npc(Technician, "Żelazny Piotr",        level=5, moves_idx=[4,6,9], fin_idx=0, stat_scale=1.05),
 
-        # Bosses
-        _make_npc(Powerhouse, "Kolos Waldemar",       level=6, moves_idx=[1,2,5], fin_idx=0),
-        _make_npc(Technician, "Profesor Zygmunt",     level=6, moves_idx=[2,5,8], fin_idx=2),
-        _make_npc(HighFlyer,  "Legenda – El Aguila",  level=7, moves_idx=[1,4,7], fin_idx=1),
+        # Bossowie – mocniejsi
+        _make_npc(Powerhouse, "Kolos Waldemar",       level=6, moves_idx=[1,2,5], fin_idx=0, stat_scale=1.10),
+        _make_npc(Technician, "Profesor Zygmunt",     level=6, moves_idx=[2,5,8], fin_idx=2, stat_scale=1.10),
+        _make_npc(HighFlyer,  "Legenda – El Aguila", level=7, moves_idx=[1,4,7], fin_idx=1, stat_scale=1.15),
     ]
     return roster
 
