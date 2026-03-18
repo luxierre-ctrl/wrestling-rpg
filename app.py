@@ -155,12 +155,10 @@ h3 { font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem !important; margin
     padding-right: 1rem;
 }
 
-/* Desktop: ogranicz szerokość do telefono-podobnej */
-@media (min-width: 769px) {
-    .main .block-container {
-        max-width: 520px !important;
-        margin: 0 auto !important;
-    }
+/* Zawsze wąski jak telefon – na każdym urządzeniu */
+.main .block-container {
+    max-width: 480px !important;
+    margin: 0 auto !important;
 }
 
 /* ── MOBILE COMPACT ── */
@@ -923,48 +921,27 @@ def phase_intro() -> None:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+
+# ══════════════════════════════════════════════════════════════════════════════
 # UI HELPERS
 # ══════════════════════════════════════════════════════════════════════════════
 
-# Ikony ruchów – emoji dopasowane do nazwy
-MOVE_ICONS: dict[str, str] = {
-    "Vertical Suplex": "🤸", "Spinebuster": "💥", "Military Press": "🏋️",
-    "Powerslam": "💪", "Big Boot": "👢", "Clothesline from Hell": "👊",
-    "Backbreaker": "🦴", "Bearhug": "🐻", "Fallaway Slam": "🌊",
-    "Shoulder Tackle": "🏈", "Dropkick": "🦵", "Hurricanrana": "🌀",
-    "Moonsault": "🌙", "Enzuigiri": "⚡", "Springboard Forearm": "🚀",
-    "Tornado DDT": "🌪️", "Crossbody": "🦅", "Standing Shooting Star": "⭐",
-    "Handspring Elbow": "🤾", "619 Kick": "6️⃣", "Arm Bar": "💪",
-    "German Suplex": "🇩🇪", "Dragon Screw": "🐉", "Cobra Twist": "🐍",
-    "Northern Lights Suplex": "✨", "Crossface": "😤", "Ankle Lock": "🦶",
-    "Exploder Suplex": "💣", "Sharpshooter": "🎯", "Fujiwara Armbar": "🔒",
-    "Powerbomb": "💣", "Chokeslam": "😤", "Spear": "🏹",
-    "450 Splash": "🌊", "Red Arrow": "🏹", "Phoenix Splash": "🔥",
-    "LeBell Lock": "🔒", "Cattle Mutilation": "💀", "Hell's Gate": "🔥",
-}
-
-def _move_icon(name: str) -> str:
-    return MOVE_ICONS.get(name, "🥊")
-
-def _full_bar(current: int, maximum: int, color: str, label: str, sublabel: str) -> str:
-    """Pełnowymiarowy pasek jak w mockupie – etykieta lewo, liczby prawo."""
+def _full_bar(current: int, maximum: int, color: str, label: str) -> str:
+    """Pasek statystyki: etykieta | pasek | liczby."""
     pct = int((current / maximum) * 100) if maximum > 0 else 0
     return (
-        f'<div style="margin:6px 0;">'
-        f'<div style="display:flex;justify-content:space-between;'
-        f'font-size:0.78rem;color:#aaa;margin-bottom:3px;">'
-        f'<span>{label} <span style="color:#666;font-size:0.7rem;">({sublabel})</span></span>'
-        f'<span style="color:#fff;font-weight:600;">{current} / {maximum}</span>'
+        f'<div style="display:flex;align-items:center;gap:6px;margin:3px 0;">'
+        f'<span style="color:#888;font-size:0.72rem;width:24px;flex-shrink:0;">{label}</span>'
+        f'<div style="flex:1;background:#2a2a3a;border-radius:4px;height:10px;">'
+        f'<div style="width:{pct}%;background:{color};border-radius:4px;height:10px;"></div>'
         f'</div>'
-        f'<div style="background:#2a2a3a;border-radius:4px;height:10px;">'
-        f'<div style="width:{pct}%;background:{color};border-radius:4px;height:10px;'
-        f'transition:width 0.3s;"></div>'
-        f'</div>'
+        f'<span style="color:#aaa;font-size:0.72rem;min-width:58px;text-align:right;">'
+        f'{current} / {maximum}</span>'
         f'</div>'
     )
 
 def _mini_bar(current: int, maximum: int, color: str, label: str) -> str:
-    """Mini pasek do walki (status rywala)."""
+    """Mini pasek do ekranu walki."""
     pct = int((current / maximum) * 100) if maximum > 0 else 0
     return (
         f'<div style="display:flex;align-items:center;gap:4px;margin:2px 0;">'
@@ -978,72 +955,61 @@ def _mini_bar(current: int, maximum: int, color: str, label: str) -> str:
     )
 
 def _last_event_bar() -> None:
-    """Pasek ostatniego ważnego wydarzenia – trąbka + opis."""
+    """Pasek ostatniego ważnego wydarzenia."""
     ev = st.session_state.get("last_event", "")
     if ev:
         st.markdown(
             f'<div style="background:#1a1200;border:1px solid #f39c12;border-radius:8px;'
-            f'padding:8px 12px;margin:6px 0;display:flex;align-items:center;gap:8px;">'
+            f'padding:7px 12px;margin:5px 0;display:flex;align-items:center;gap:8px;">'
             f'<span style="font-size:1rem;">📢</span>'
-            f'<span style="color:#f39c12;font-size:0.82rem;font-weight:600;">{ev}</span>'
+            f'<span style="color:#f39c12;font-size:0.8rem;font-weight:600;">{ev}</span>'
             f'</div>',
             unsafe_allow_html=True,
         )
 
 def _section_label(text: str) -> None:
-    """Etykieta sekcji jak 'KARTA POSTACI', 'RUCHY I UMIEJĘTNOŚCI' itp."""
     st.markdown(
-        f'<div style="color:#888;font-size:0.68rem;font-weight:700;letter-spacing:1.5px;'
-        f'text-transform:uppercase;margin:10px 0 5px 0;">{text}</div>',
+        f'<div style="color:#888;font-size:0.65rem;font-weight:700;letter-spacing:1.5px;'
+        f'text-transform:uppercase;margin:8px 0 4px 0;">{text}</div>',
         unsafe_allow_html=True,
-    )
-
-def _card(content: str, border_color: str = "#2a2a3e") -> str:
-    """Ciemna ramka jak w mockupie."""
-    return (
-        f'<div style="background:#12121f;border:1px solid {border_color};'
-        f'border-radius:10px;padding:12px 14px;margin-bottom:8px;">'
-        f'{content}</div>'
     )
 
 # ══════════════════════════════════════════════════════════════════════════════
 # GŁÓWNY HUD – wg mockupu
 # ══════════════════════════════════════════════════════════════════════════════
 
-def render_hud(player: "Wrestler", show_equip_btn: bool = True) -> None:
-    """Pełny HUD wg mockupu: nagłówek, karta postaci, ruchy, akcje."""
+def render_hud(player: "Wrestler", day: int = 0, show_equip_btn: bool = True) -> None:
+    """HUD wg mockupu: nagłówek, karta postaci, ruchy."""
     from game.characters import XP_THRESHOLDS
     from game.assets import LOGO_CREATOR_B64
 
     chapter = st.session_state.chapter
-    chapter_name = "Rozdział I" if chapter == 1 else "Rozdział II"
+    chapter_label = "Rozdział I" if chapter == 1 else "Rozdział II"
     location = "Żelazna Piwnica" if chapter == 1 else "Radom Wrestling League"
     federation = "Żelazna Piwnica – Szkoła Wrestlingu" if chapter == 1 else "Radom Wrestling League"
     wins = st.session_state.school_wins if chapter == 1 else st.session_state.federation_wins
     wins_max = "/5" if chapter == 1 else ""
 
     xp_needed = XP_THRESHOLDS[player.level] if player.level < len(XP_THRESHOLDS) else player.xp or 1
-    xp_pct = int((player.xp / xp_needed) * 100) if xp_needed else 100
 
-    # Pas mistrzowski
     champ = player.equipped.get("championship")
     champ_name = champ.name if champ else "Brak"
-    champ_color = "#f39c12" if champ else "#444"
+    champ_color = "#f39c12" if champ else "#555"
 
     passive = player.passive_skill
 
-    # ── NAGŁÓWEK: lokacja + logo ──────────────────────────────────────────────
+    # ── NAGŁÓWEK: Rozdział | Lokacja ─────────────────────────────────────────
     st.markdown(
         f'''<div style="display:flex;align-items:center;justify-content:space-between;
-                       padding:6px 0 10px 0;border-bottom:1px solid #2a2a3e;margin-bottom:8px;">
-            <div>
-                <div style="font-family:Bebas Neue,sans-serif;font-size:1.6rem;
-                            color:#fff;letter-spacing:2px;">{location.upper()}</div>
-                <div style="font-size:0.68rem;color:#e94560;letter-spacing:1px;
-                            text-transform:uppercase;">{chapter_name}</div>
+                       padding:8px 0 8px 0;border-bottom:1px solid #2a2a3e;margin-bottom:8px;">
+            <div style="display:flex;align-items:baseline;gap:10px;">
+                <span style="color:#e94560;font-size:0.68rem;font-weight:700;
+                             letter-spacing:1px;text-transform:uppercase;">{chapter_label}</span>
+                <span style="font-family:Bebas Neue,sans-serif;font-size:1.7rem;
+                             color:#fff;letter-spacing:2px;">{location.upper()}</span>
             </div>
             <img src="data:image/png;base64,{LOGO_CREATOR_B64}"
-                 style="height:44px;width:auto;opacity:0.9;" alt="DKG"/>
+                 style="height:40px;width:auto;opacity:0.85;" alt="DKG"/>
         </div>''',
         unsafe_allow_html=True,
     )
@@ -1051,112 +1017,118 @@ def render_hud(player: "Wrestler", show_equip_btn: bool = True) -> None:
     # ── KARTA POSTACI ─────────────────────────────────────────────────────────
     _section_label("Karta postaci")
 
-    xp_bar  = _full_bar(player.xp, xp_needed, "#9b59b6", "XP", "Doświadczenie")
-    hp_bar  = _full_bar(player.current_hp, player.max_hp, "#e94560", "HP", "Punkty Życia")
-    en_bar  = _full_bar(player.current_energy, player.max_energy, "#4ecdc4", "En", "Energia")
+    # Wiersz 1: Imię + LVL badge + DZIEŃ X
+    day_html = (
+        f'<span style="font-family:Bebas Neue,sans-serif;font-size:1.5rem;'
+        f'color:#fff;letter-spacing:1px;">DZIEŃ {day}</span>'
+    ) if day > 0 else ""
 
-    card_content = (
-        f'<div style="font-family:Bebas Neue,sans-serif;font-size:1.35rem;'
-        f'color:#fff;letter-spacing:1px;margin-bottom:6px;">'
-        f'{player.name.upper()} [{player.character_class}] – LVL {player.level}</div>'
-        f'<div style="font-size:0.72rem;color:#888;margin-bottom:8px;">'
-        f'Federacja: <span style="color:#aaa;">{federation}</span>'
-        f'&nbsp;·&nbsp;Pas: <span style="color:{champ_color};">{champ_name}</span>'
-        f'</div>'
-        + xp_bar + hp_bar + en_bar +
-        f'<div style="display:flex;align-items:center;gap:12px;margin-top:8px;">'
-        f'<span style="font-size:0.82rem;color:#ddd;">💪 Siła: <b>{player.effective_strength}</b></span>'
-        f'<span style="font-size:0.82rem;color:#ddd;">🏃 Zręczność: <b>{player.effective_dexterity}</b></span>'
-        f'<span style="margin-left:auto;background:#2a2a3e;border-radius:6px;'
-        f'padding:2px 10px;font-size:0.78rem;color:#e94560;font-weight:700;">'
+    st.markdown(
+        f'<div style="background:#12121f;border:1px solid #2a2a3e;border-radius:10px;'
+        f'padding:12px 14px;margin-bottom:6px;">'
+
+        # Wiersz 1: Imię + LVL + Dzień
+        f'<div style="display:flex;align-items:center;justify-content:space-between;'
+        f'margin-bottom:6px;">'
+        f'<div style="display:flex;align-items:center;gap:8px;">'
+        f'<span style="font-family:Bebas Neue,sans-serif;font-size:1.2rem;color:#fff;">'
+        f'{player.name.upper()} [{player.character_class}]</span>'
+        f'<span style="background:#2a2a3e;border:1px solid #e94560;border-radius:6px;'
+        f'padding:1px 8px;font-size:0.72rem;color:#e94560;font-weight:700;">'
         f'LVL {player.level}</span>'
         f'</div>'
-        f'<div style="font-size:0.7rem;color:#4ecdc4;margin-top:4px;">'
-        f'🏆 Wygrane: {wins}{wins_max}'
+        f'{day_html}'
         f'</div>'
+
+        # Wiersz 2: Federacja + Pas
+        f'<div style="font-size:0.7rem;color:#666;margin-bottom:8px;">'
+        f'Federacja: <span style="color:#888;">{federation}</span>'
+        f' · Pas: <span style="color:{champ_color};">{champ_name}</span>'
+        f'</div>'
+
+        # Paski + statystyki obok
+        f'<div style="display:flex;gap:10px;align-items:flex-start;">'
+
+        # Lewa: paski XP/HP/En
+        f'<div style="flex:1;min-width:0;">'
+        + _full_bar(player.xp, xp_needed, "#9b59b6", "XP")
+        + _full_bar(player.current_hp, player.max_hp, "#e94560", "HP")
+        + _full_bar(player.current_energy, player.max_energy, "#4ecdc4", "En")
+        + f'</div>'
+
+        # Prawa: Wygrane + Siła + Zręczność
+        f'<div style="flex-shrink:0;text-align:right;font-size:0.75rem;line-height:1.8;">'
+        f'<div style="color:#f39c12;">🏆 Wygrane: {wins}{wins_max}</div>'
+        f'<div style="color:#ddd;">💪 Siła: <b>{player.effective_strength}</b></div>'
+        f'<div style="color:#ddd;">🏃 Zręczność: <b>{player.effective_dexterity}</b></div>'
+        f'</div>'
+        f'</div>'  # koniec flex pasków
+        f'</div>',  # koniec karty
+        unsafe_allow_html=True,
     )
-    st.markdown(_card(card_content, "#2a2a3e"), unsafe_allow_html=True)
 
     # ── RUCHY I UMIEJĘTNOŚCI ──────────────────────────────────────────────────
     _section_label("Ruchy i Umiejętności")
 
     fin = player.finisher
-
-    # 3 ruchy w górnym rzędzie
     moves = player.moves
+
+    # 3 ruchy w górnym rzędzie – bez ikon, tylko tekst
     move_cells = ""
     for m in moves[:3]:
-        icon = _move_icon(m.name)
         move_cells += (
             f'<div style="background:#1a1a2e;border:1px solid #2a2a3e;border-radius:8px;'
             f'padding:8px 6px;text-align:center;">'
-            f'<div style="font-size:1.3rem;">{icon}</div>'
-            f'<div style="font-size:0.75rem;color:#ddd;font-weight:600;margin:2px 0;">{m.name}</div>'
-            f'<div style="font-size:0.65rem;color:#888;">{m.energy_cost}⚡ ×{m.damage_multiplier}</div>'
+            f'<div style="font-size:0.8rem;color:#ddd;font-weight:600;">{m.name}</div>'
+            f'<div style="font-size:0.67rem;color:#888;margin-top:2px;">'
+            f'{m.energy_cost}⚡ ×{m.damage_multiplier}</div>'
             f'</div>'
         )
 
-    # Finisher + pasywna w dolnym rzędzie
+    # Finisher + Pasywna w dolnym rzędzie
     fin_cell = ""
     if fin:
-        fin_icon = _move_icon(fin.name)
         fin_cell = (
             f'<div style="background:#1a0e00;border:1px solid #f39c12;border-radius:8px;'
-            f'padding:8px 10px;display:flex;align-items:center;gap:8px;">'
-            f'<div style="font-size:1.4rem;">{fin_icon}</div>'
-            f'<div>'
-            f'<div style="font-size:0.82rem;color:#f39c12;font-weight:700;">{fin.name}</div>'
-            f'<div style="font-size:0.65rem;color:#888;">'
+            f'padding:8px 12px;">'
+            f'<div style="font-size:0.85rem;color:#f39c12;font-weight:700;">{fin.name}</div>'
+            f'<div style="font-size:0.67rem;color:#888;margin-top:2px;">'
             f'{fin.energy_cost} 💥×{fin.damage_multiplier} '
             f'<span style="background:#2a1800;color:#f39c12;padding:1px 5px;'
-            f'border-radius:4px;font-size:0.6rem;">Koronny</span>'
-            f'</div>'
+            f'border-radius:4px;font-size:0.6rem;font-weight:700;">Koronny</span>'
             f'</div>'
             f'</div>'
         )
 
     passive_cell = (
-        f'<div style="background:#001a1a;border:1px solid #4ecdc4;border-radius:8px;'
-        f'padding:8px 10px;display:flex;align-items:center;gap:8px;">'
-        f'<div style="font-size:1.4rem;">🛡️</div>'
-        f'<div>'
-        f'<div style="font-size:0.82rem;color:#4ecdc4;font-weight:700;">{passive.name}</div>'
-        f'<div style="font-size:0.65rem;color:#888;">Pasywna</div>'
+        f'<div style="background:#001a18;border:1px solid #4ecdc4;border-radius:8px;'
+        f'padding:8px 12px;">'
+        f'<div style="font-size:0.85rem;color:#4ecdc4;font-weight:700;">{passive.name}</div>'
+        f'<div style="font-size:0.67rem;color:#888;margin-top:2px;">'
+        f'Pasywna · {passive.description[:35]}{"…" if len(passive.description)>35 else ""}'
         f'</div>'
         f'</div>'
     )
 
     st.markdown(
-        f'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px;">'
+        f'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:5px;">'
         f'{move_cells}</div>'
-        f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">'
+        f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:8px;">'
         f'{fin_cell}{passive_cell}</div>',
         unsafe_allow_html=True,
     )
 
-    # ── EKWIPUNEK (rozwijany) ─────────────────────────────────────────────────
+    # ── EKWIPUNEK (jeden szeroki przycisk) ────────────────────────────────────
     if show_equip_btn:
-        col_eq, col_ev = st.columns(2)
-        with col_eq:
-            if st.button("🎽  Ekwipunek", key="open_equip", use_container_width=True):
-                st.session_state.show_equip = not st.session_state.get("show_equip", False)
-                st.rerun()
-        with col_ev:
-            # Ostatnie wydarzenie jako przycisk-info
-            ev = st.session_state.get("last_event", "")
-            ev_short = ev[:28] + "…" if len(ev) > 28 else ev
-            st.markdown(
-                f'<div style="background:#12121f;border:1px solid #2a2a3e;border-radius:6px;'
-                f'padding:6px 10px;display:flex;align-items:center;gap:6px;height:38px;'
-                f'overflow:hidden;">'
-                f'<span style="font-size:0.9rem;">📢</span>'
-                f'<span style="font-size:0.7rem;color:#f39c12;line-height:1.2;">{ev_short or "Brak wydarzeń"}</span>'
-                f'</div>',
-                unsafe_allow_html=True,
-            )
+        if st.button("🎽  Ekwipunek", key="open_equip", use_container_width=True):
+            st.session_state.show_equip = not st.session_state.get("show_equip", False)
+            st.rerun()
 
         if st.session_state.get("show_equip", False):
             _render_equip_panel(player)
+
+    # ── OSTATNIE WYDARZENIE ───────────────────────────────────────────────────
+    _last_event_bar()
 
 
 def _render_equip_panel(player: "Wrestler") -> None:
@@ -1167,26 +1139,24 @@ def _render_equip_panel(player: "Wrestler") -> None:
         "protector":    ("🦺", "Ochraniacz"),
         "championship": ("🏆", "Pas Mistrzowski"),
     }
-    items_html = ""
+    rows = ""
     for slot, (icon, label) in slots.items():
         item = player.equipped.get(slot)
         name = item.name if item else "— brak —"
-        bonus = repr(item.bonuses) if item else ""
+        bonus = f"  {repr(item.bonuses)}" if item else ""
         color = "#ddd" if item else "#444"
-        items_html += (
-            f'<div style="display:flex;justify-content:space-between;'
-            f'padding:4px 0;border-bottom:1px solid #1a1a2e;">'
+        rows += (
+            f'<div style="display:flex;justify-content:space-between;align-items:center;'
+            f'padding:5px 0;border-bottom:1px solid #1a1a2e;">'
             f'<span style="font-size:0.75rem;color:#888;">{icon} {label}</span>'
-            f'<span style="font-size:0.75rem;color:{color};">{name}'
-            f'{"  "+bonus if bonus else ""}</span>'
+            f'<span style="font-size:0.75rem;color:{color};">{name}{bonus}</span>'
             f'</div>'
         )
     st.markdown(
         f'<div style="background:#0f0f1a;border:1px solid #2a2a3e;border-radius:8px;'
-        f'padding:10px 12px;margin:4px 0;">{items_html}</div>',
+        f'padding:10px 12px;margin:4px 0;">{rows}</div>',
         unsafe_allow_html=True,
     )
-
     inv = player.inventory
     if inv:
         with st.expander(f"🎒 Torba ({len(inv)} przedmiotów)"):
@@ -1202,7 +1172,7 @@ def _render_equip_panel(player: "Wrestler") -> None:
                         except ItemRequirementError as e:
                             st.error(str(e))
     else:
-        st.caption("Torba pusta. Idź na spacer!")
+        st.caption("Torba pusta – idź na spacer!")
 
 
 def render_journal() -> None:
@@ -1213,7 +1183,7 @@ def render_journal() -> None:
     st.markdown(
         f'<div style="background:#0a0a14;border:1px solid #1a1a2e;border-radius:8px;'
         f'padding:10px 14px;height:200px;overflow-y:auto;'
-        f'font-size:0.8rem;color:#bbb;line-height:1.7;">{html}</div>',
+        f'font-size:0.8rem;color:#bbb;line-height:1.8;">{html}</div>',
         unsafe_allow_html=True,
     )
 
@@ -1226,7 +1196,7 @@ def phase_game() -> None:
     player: Wrestler = st.session_state.player
     day = st.session_state.day
 
-    render_hud(player)
+    render_hud(player, day=day)
 
     # Chapter transition
     declined_day = st.session_state.get("chapter2_declined_day", -99)
@@ -1269,7 +1239,7 @@ def phase_game() -> None:
             f'<div style="background:#1a0808;border:1px solid #e94560;border-radius:10px;'
             f'padding:12px 14px;margin:8px 0;text-align:center;">'
             f'<div style="font-family:Bebas Neue,sans-serif;font-size:1.3rem;color:#e94560;">'
-            f'🥊 DZIEŃ WALKI – Dzień {day}</div>'
+            f'🥊 DZIEŃ WALKI</div>'
             f'<div style="font-size:0.8rem;color:#aaa;margin-top:4px;">'
             f'Rywal: <b style="color:#fff;">{npc_preview.name}</b>'
             f' · Lvl {npc_preview.level}'
@@ -1296,20 +1266,16 @@ def phase_game() -> None:
     else:
         # Akcje dnia
         st.markdown(
-            f'<div style="display:flex;align-items:baseline;gap:8px;margin:6px 0 4px 0;">'
-            f'<span style="font-family:Bebas Neue,sans-serif;font-size:1.1rem;color:#fff;">'
-            f'Dzień {day}</span>'
-            f'<span style="color:#888;font-size:0.78rem;">Co robisz dzisiaj?</span>'
-            f'</div>',
+            f'<div style="font-size:0.85rem;color:#aaa;margin:6px 0 4px 0;">'
+            f'Co robisz dzisiaj?</div>',
             unsafe_allow_html=True,
         )
-
         btn_train = st.button(
             "🏋️  Trening (+40XP -25HP)",
             key="btn_train", use_container_width=True, type="primary"
         )
         btn_walk = st.button(
-            "🚶  Spacer – Przedmiot?",
+            "🚶  Spacer – Szukanie przedmiotów  -5 En",
             key="btn_walk", use_container_width=True
         )
         btn_regen = st.button(
@@ -1347,52 +1313,35 @@ def phase_battle() -> None:
     player: Wrestler = st.session_state.player
     npc: Wrestler = st.session_state.current_npc
 
-    from game.assets import LOGO_CREATOR_B64
-    chapter = st.session_state.chapter
-    location = "Żelazna Piwnica" if chapter == 1 else "Radom Wrestling League"
+    # HUD gracza (bez dnia i bez ekwipunku)
+    render_hud(player, day=0, show_equip_btn=False)
 
-    # Nagłówek
-    st.markdown(
-        f'''<div style="display:flex;align-items:center;justify-content:space-between;
-                       padding:6px 0 10px 0;border-bottom:1px solid #2a2a3e;margin-bottom:8px;">
-            <div>
-                <div style="font-family:Bebas Neue,sans-serif;font-size:1.5rem;
-                            color:#e94560;letter-spacing:2px;">🥊 WALKA!</div>
-                <div style="font-size:0.68rem;color:#888;">{location}</div>
-            </div>
-            <img src="data:image/png;base64,{LOGO_CREATOR_B64}"
-                 style="height:40px;width:auto;opacity:0.9;" alt="DKG"/>
-        </div>''',
-        unsafe_allow_html=True,
-    )
-
-    # Status obu zawodników
+    # Status walki
     _section_label("Status walki")
     col1, col2 = st.columns(2)
     with col1:
         st.markdown(
             f'<div style="background:#12121f;border:1px solid #e94560;border-radius:8px;'
             f'padding:8px 10px;">'
-            f'<div style="font-size:0.78rem;font-weight:700;color:#fff;margin-bottom:4px;">'
+            f'<div style="font-size:0.75rem;font-weight:700;color:#fff;margin-bottom:4px;">'
             f'🤼 {player.name}</div>'
             + _mini_bar(player.current_hp, player.max_hp, "#e94560", "HP")
             + _mini_bar(player.current_energy, player.max_energy, "#4ecdc4", "En")
-            + f'</div>',
+            + '</div>',
             unsafe_allow_html=True,
         )
     with col2:
         st.markdown(
             f'<div style="background:#12121f;border:1px solid #f39c12;border-radius:8px;'
             f'padding:8px 10px;">'
-            f'<div style="font-size:0.78rem;font-weight:700;color:#f39c12;margin-bottom:4px;">'
+            f'<div style="font-size:0.75rem;font-weight:700;color:#f39c12;margin-bottom:4px;">'
             f'⚔️ {npc.name} Lvl{npc.level}</div>'
             + _mini_bar(npc.current_hp, npc.max_hp, "#f39c12", "HP")
             + _mini_bar(npc.current_energy, npc.max_energy, "#9b59b6", "En")
-            + f'</div>',
+            + '</div>',
             unsafe_allow_html=True,
         )
 
-    # Pasek ostatniego wydarzenia
     _last_event_bar()
 
     # Log walki
@@ -1400,7 +1349,7 @@ def phase_battle() -> None:
         battle_html = "<br>".join(st.session_state.battle_log[-12:])
         st.markdown(
             f'<div style="background:#0a0a14;border:1px solid #1a1a2e;border-radius:8px;'
-            f'padding:8px 12px;height:120px;overflow-y:auto;'
+            f'padding:8px 12px;height:110px;overflow-y:auto;'
             f'font-size:0.78rem;color:#bbb;line-height:1.6;margin:6px 0;">'
             f'{battle_html}</div>',
             unsafe_allow_html=True,
@@ -1422,14 +1371,12 @@ def phase_battle() -> None:
 
     # Akcje walki
     _section_label("Twoja akcja")
-
     move_cols = st.columns(len(player.moves))
     for i, move in enumerate(player.moves):
         with move_cols[i]:
             disabled = player.current_energy < move.energy_cost
-            icon = _move_icon(move.name)
             if st.button(
-                f"{icon}\n{move.name}\n{move.energy_cost}⚡",
+                f"{move.name}\n{move.energy_cost}⚡",
                 key=f"move_{i}",
                 disabled=disabled,
                 use_container_width=True,
@@ -1442,9 +1389,8 @@ def phase_battle() -> None:
     with col_fin:
         if fin:
             fin_ok = npc.hp_percentage < 35 and player.current_energy >= fin.energy_cost
-            fin_icon = _move_icon(fin.name)
             if st.button(
-                f"💥 {fin.name}\n{fin.energy_cost}⚡  {'✅ DOSTĘPNY' if fin_ok else '🔒 < 35% HP'}",
+                f"💥 {fin.name}\n{fin.energy_cost}⚡  {'✅' if fin_ok else '🔒<35%HP'}",
                 disabled=not fin_ok,
                 type="primary" if fin_ok else "secondary",
                 use_container_width=True,
@@ -1456,13 +1402,14 @@ def phase_battle() -> None:
         if st.button(
             "⚡ ADRENALINA\n+30HP +25En",
             key="adrenaline",
-            use_container_width=True
+            use_container_width=True,
         ):
             blog(player.adrenaline_rush())
             _npc_turn(npc, player)
             st.rerun()
 
     render_journal()
+
 
 def _execute_player_turn(move, player: Wrestler, npc: Wrestler) -> None:
     try:
