@@ -123,14 +123,22 @@ st.set_page_config(
 # Wymuś ciemny motyw – nadpisz jasne kolory Streamlita
 st.markdown("""
 <style>
-/* Wymuś ciemne tło nawet gdy Streamlit Cloud ładuje jasny motyw */
-html, body, [data-testid="stAppViewContainer"], 
-[data-testid="stMain"], .main, 
-[data-testid="stHeader"] {
+/* Wymuś ciemne tło */
+html, body, [data-testid="stAppViewContainer"],
+[data-testid="stMain"], .main {
     background-color: #0f0f1a !important;
     color: #eeeeee !important;
 }
 [data-testid="stSidebar"] { background-color: #1a1a2e !important; }
+
+/* Ukryj toolbar Streamlita (Fork/Deploy/GitHub) */
+[data-testid="stToolbar"],
+[data-testid="stDecoration"],
+[data-testid="stHeader"] { display: none !important; }
+
+/* Usuń górny padding który zostawia toolbar */
+.main > div:first-child { padding-top: 0 !important; }
+section.main > div { padding-top: 0.3rem !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -148,17 +156,17 @@ h2 { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem !important; margin
 h3 { font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem !important; margin-bottom: 0.25rem !important; }
 
 .main .block-container {
-    max-width: 860px;
-    padding-top: 0.6rem;
-    padding-bottom: 1rem;
-    padding-left: 1rem;
-    padding-right: 1rem;
+    max-width: 100% !important;
+    padding-top: 0 !important;
+    padding-bottom: 0.5rem;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
 }
 
-/* Zawsze wąski jak telefon – na każdym urządzeniu */
-.main .block-container {
-    max-width: 480px !important;
-    margin: 0 auto !important;
+/* Centralny kontener gry */
+.game-wrap {
+    max-width: 480px;
+    margin: 0 auto;
 }
 
 /* ── MOBILE COMPACT ── */
@@ -930,13 +938,13 @@ def _full_bar(current: int, maximum: int, color: str, label: str) -> str:
     """Pasek statystyki: etykieta | pasek | liczby."""
     pct = int((current / maximum) * 100) if maximum > 0 else 0
     return (
-        f'<div style="display:flex;align-items:center;gap:6px;margin:3px 0;">'
-        f'<span style="color:#888;font-size:0.72rem;width:24px;flex-shrink:0;">{label}</span>'
-        f'<div style="flex:1;background:#2a2a3a;border-radius:4px;height:10px;">'
-        f'<div style="width:{pct}%;background:{color};border-radius:4px;height:10px;"></div>'
+        f'<div style="display:flex;align-items:center;gap:5px;margin:2px 0;">'
+        f'<span style="color:#888;font-size:0.68rem;width:20px;flex-shrink:0;">{label}</span>'
+        f'<div style="flex:1;background:#2a2a3a;border-radius:3px;height:8px;">'
+        f'<div style="width:{pct}%;background:{color};border-radius:3px;height:8px;"></div>'
         f'</div>'
-        f'<span style="color:#aaa;font-size:0.72rem;min-width:58px;text-align:right;">'
-        f'{current} / {maximum}</span>'
+        f'<span style="color:#aaa;font-size:0.68rem;min-width:52px;text-align:right;">'
+        f'{current}/{maximum}</span>'
         f'</div>'
     )
 
@@ -959,18 +967,18 @@ def _last_event_bar() -> None:
     ev = st.session_state.get("last_event", "")
     if ev:
         st.markdown(
-            f'<div style="background:#1a1200;border:1px solid #f39c12;border-radius:8px;'
-            f'padding:7px 12px;margin:5px 0;display:flex;align-items:center;gap:8px;">'
-            f'<span style="font-size:1rem;">📢</span>'
-            f'<span style="color:#f39c12;font-size:0.8rem;font-weight:600;">{ev}</span>'
+            f'<div style="background:#1a1200;border:1px solid #f39c12;border-radius:6px;'
+            f'padding:4px 8px;margin:3px 0;display:flex;align-items:center;gap:6px;">'
+            f'<span style="font-size:0.85rem;">📢</span>'
+            f'<span style="color:#f39c12;font-size:0.75rem;font-weight:600;">{ev}</span>'
             f'</div>',
             unsafe_allow_html=True,
         )
 
 def _section_label(text: str) -> None:
     st.markdown(
-        f'<div style="color:#888;font-size:0.65rem;font-weight:700;letter-spacing:1.5px;'
-        f'text-transform:uppercase;margin:8px 0 4px 0;">{text}</div>',
+        f'<div style="color:#888;font-size:0.62rem;font-weight:700;letter-spacing:1.5px;'
+        f'text-transform:uppercase;margin:4px 0 2px 0;">{text}</div>',
         unsafe_allow_html=True,
     )
 
@@ -1001,15 +1009,15 @@ def render_hud(player: "Wrestler", day: int = 0, show_equip_btn: bool = True) ->
     # ── NAGŁÓWEK: Rozdział | Lokacja ─────────────────────────────────────────
     st.markdown(
         f'''<div style="display:flex;align-items:center;justify-content:space-between;
-                       padding:8px 0 8px 0;border-bottom:1px solid #2a2a3e;margin-bottom:8px;">
-            <div style="display:flex;align-items:baseline;gap:10px;">
-                <span style="color:#e94560;font-size:0.68rem;font-weight:700;
+                       padding:4px 0 5px 0;border-bottom:1px solid #2a2a3e;margin-bottom:5px;">
+            <div style="display:flex;align-items:baseline;gap:8px;">
+                <span style="color:#e94560;font-size:0.62rem;font-weight:700;
                              letter-spacing:1px;text-transform:uppercase;">{chapter_label}</span>
-                <span style="font-family:Bebas Neue,sans-serif;font-size:1.7rem;
+                <span style="font-family:Bebas Neue,sans-serif;font-size:1.4rem;
                              color:#fff;letter-spacing:2px;">{location.upper()}</span>
             </div>
             <img src="data:image/png;base64,{LOGO_CREATOR_B64}"
-                 style="height:40px;width:auto;opacity:0.85;" alt="DKG"/>
+                 style="height:32px;width:auto;opacity:0.85;" alt="DKG"/>
         </div>''',
         unsafe_allow_html=True,
     )
@@ -1019,35 +1027,35 @@ def render_hud(player: "Wrestler", day: int = 0, show_equip_btn: bool = True) ->
 
     # Wiersz 1: Imię + LVL badge + DZIEŃ X
     day_html = (
-        f'<span style="font-family:Bebas Neue,sans-serif;font-size:1.5rem;'
+        f'<span style="font-family:Bebas Neue,sans-serif;font-size:1.2rem;'
         f'color:#fff;letter-spacing:1px;">DZIEŃ {day}</span>'
     ) if day > 0 else ""
 
     st.markdown(
-        f'<div style="background:#12121f;border:1px solid #2a2a3e;border-radius:10px;'
-        f'padding:12px 14px;margin-bottom:6px;">'
+        f'<div style="background:#12121f;border:1px solid #2a2a3e;border-radius:8px;'
+        f'padding:8px 10px;margin-bottom:4px;">'
 
         # Wiersz 1: Imię + LVL + Dzień
         f'<div style="display:flex;align-items:center;justify-content:space-between;'
-        f'margin-bottom:6px;">'
-        f'<div style="display:flex;align-items:center;gap:8px;">'
-        f'<span style="font-family:Bebas Neue,sans-serif;font-size:1.2rem;color:#fff;">'
+        f'margin-bottom:3px;">'
+        f'<div style="display:flex;align-items:center;gap:6px;">'
+        f'<span style="font-family:Bebas Neue,sans-serif;font-size:1.05rem;color:#fff;">'
         f'{player.name.upper()} [{player.character_class}]</span>'
-        f'<span style="background:#2a2a3e;border:1px solid #e94560;border-radius:6px;'
-        f'padding:1px 8px;font-size:0.72rem;color:#e94560;font-weight:700;">'
+        f'<span style="background:#2a2a3e;border:1px solid #e94560;border-radius:5px;'
+        f'padding:0px 6px;font-size:0.68rem;color:#e94560;font-weight:700;">'
         f'LVL {player.level}</span>'
         f'</div>'
         f'{day_html}'
         f'</div>'
 
         # Wiersz 2: Federacja + Pas
-        f'<div style="font-size:0.7rem;color:#666;margin-bottom:8px;">'
-        f'Federacja: <span style="color:#888;">{federation}</span>'
+        f'<div style="font-size:0.65rem;color:#555;margin-bottom:5px;">'
+        f'Federacja: <span style="color:#777;">{federation}</span>'
         f' · Pas: <span style="color:{champ_color};">{champ_name}</span>'
         f'</div>'
 
         # Paski + statystyki obok
-        f'<div style="display:flex;gap:10px;align-items:flex-start;">'
+        f'<div style="display:flex;gap:8px;align-items:flex-start;">'
 
         # Lewa: paski XP/HP/En
         f'<div style="flex:1;min-width:0;">'
@@ -1057,13 +1065,13 @@ def render_hud(player: "Wrestler", day: int = 0, show_equip_btn: bool = True) ->
         + f'</div>'
 
         # Prawa: Wygrane + Siła + Zręczność
-        f'<div style="flex-shrink:0;text-align:right;font-size:0.75rem;line-height:1.8;">'
-        f'<div style="color:#f39c12;">🏆 Wygrane: {wins}{wins_max}</div>'
-        f'<div style="color:#ddd;">💪 Siła: <b>{player.effective_strength}</b></div>'
-        f'<div style="color:#ddd;">🏃 Zręczność: <b>{player.effective_dexterity}</b></div>'
+        f'<div style="flex-shrink:0;text-align:right;font-size:0.7rem;line-height:1.7;">'
+        f'<div style="color:#f39c12;">🏆 {wins}{wins_max}</div>'
+        f'<div style="color:#ddd;">💪 {player.effective_strength}</div>'
+        f'<div style="color:#ddd;">🏃 {player.effective_dexterity}</div>'
         f'</div>'
-        f'</div>'  # koniec flex pasków
-        f'</div>',  # koniec karty
+        f'</div>'
+        f'</div>',
         unsafe_allow_html=True,
     )
 
@@ -1077,10 +1085,10 @@ def render_hud(player: "Wrestler", day: int = 0, show_equip_btn: bool = True) ->
     move_cells = ""
     for m in moves[:3]:
         move_cells += (
-            f'<div style="background:#1a1a2e;border:1px solid #2a2a3e;border-radius:8px;'
-            f'padding:8px 6px;text-align:center;">'
-            f'<div style="font-size:0.8rem;color:#ddd;font-weight:600;">{m.name}</div>'
-            f'<div style="font-size:0.67rem;color:#888;margin-top:2px;">'
+            f'<div style="background:#1a1a2e;border:1px solid #2a2a3e;border-radius:6px;'
+            f'padding:5px 4px;text-align:center;">'
+            f'<div style="font-size:0.75rem;color:#ddd;font-weight:600;line-height:1.2;">{m.name}</div>'
+            f'<div style="font-size:0.62rem;color:#888;margin-top:1px;">'
             f'{m.energy_cost}⚡ ×{m.damage_multiplier}</div>'
             f'</div>'
         )
@@ -1089,31 +1097,31 @@ def render_hud(player: "Wrestler", day: int = 0, show_equip_btn: bool = True) ->
     fin_cell = ""
     if fin:
         fin_cell = (
-            f'<div style="background:#1a0e00;border:1px solid #f39c12;border-radius:8px;'
-            f'padding:8px 12px;">'
-            f'<div style="font-size:0.85rem;color:#f39c12;font-weight:700;">{fin.name}</div>'
-            f'<div style="font-size:0.67rem;color:#888;margin-top:2px;">'
-            f'{fin.energy_cost} 💥×{fin.damage_multiplier} '
-            f'<span style="background:#2a1800;color:#f39c12;padding:1px 5px;'
-            f'border-radius:4px;font-size:0.6rem;font-weight:700;">Koronny</span>'
+            f'<div style="background:#1a0e00;border:1px solid #f39c12;border-radius:6px;'
+            f'padding:5px 8px;">'
+            f'<div style="font-size:0.78rem;color:#f39c12;font-weight:700;">{fin.name}</div>'
+            f'<div style="font-size:0.62rem;color:#888;margin-top:1px;">'
+            f'{fin.energy_cost}💥×{fin.damage_multiplier} '
+            f'<span style="background:#2a1800;color:#f39c12;padding:0px 4px;'
+            f'border-radius:3px;font-size:0.58rem;font-weight:700;">Koronny</span>'
             f'</div>'
             f'</div>'
         )
 
     passive_cell = (
-        f'<div style="background:#001a18;border:1px solid #4ecdc4;border-radius:8px;'
-        f'padding:8px 12px;">'
-        f'<div style="font-size:0.85rem;color:#4ecdc4;font-weight:700;">{passive.name}</div>'
-        f'<div style="font-size:0.67rem;color:#888;margin-top:2px;">'
-        f'Pasywna · {passive.description[:35]}{"…" if len(passive.description)>35 else ""}'
+        f'<div style="background:#001a18;border:1px solid #4ecdc4;border-radius:6px;'
+        f'padding:5px 8px;">'
+        f'<div style="font-size:0.78rem;color:#4ecdc4;font-weight:700;">{passive.name}</div>'
+        f'<div style="font-size:0.62rem;color:#888;margin-top:1px;">'
+        f'Pasywna · {passive.description[:30]}{"…" if len(passive.description)>30 else ""}'
         f'</div>'
         f'</div>'
     )
 
     st.markdown(
-        f'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:5px;">'
+        f'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;margin-bottom:3px;">'
         f'{move_cells}</div>'
-        f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:8px;">'
+        f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-bottom:5px;">'
         f'{fin_cell}{passive_cell}</div>',
         unsafe_allow_html=True,
     )
@@ -1182,8 +1190,8 @@ def render_journal() -> None:
     html = "<br>".join(f"<span>{e}</span>" for e in entries)
     st.markdown(
         f'<div style="background:#0a0a14;border:1px solid #1a1a2e;border-radius:8px;'
-        f'padding:10px 14px;height:200px;overflow-y:auto;'
-        f'font-size:0.8rem;color:#bbb;line-height:1.8;">{html}</div>',
+        f'padding:6px 10px;height:150px;overflow-y:auto;'
+        f'font-size:0.75rem;color:#bbb;line-height:1.6;">{html}</div>',
         unsafe_allow_html=True,
     )
 
@@ -1266,7 +1274,7 @@ def phase_game() -> None:
     else:
         # Akcje dnia
         st.markdown(
-            f'<div style="font-size:0.85rem;color:#aaa;margin:6px 0 4px 0;">'
+            f'<div style="font-size:0.78rem;color:#aaa;margin:3px 0 2px 0;">'
             f'Co robisz dzisiaj?</div>',
             unsafe_allow_html=True,
         )
@@ -1530,13 +1538,19 @@ def _story_log(text: str) -> None:
 
 def main() -> None:
     phase = st.session_state.phase
-    if   phase == "splash":  phase_splash()
-    elif phase == "intro":   phase_intro()
-    elif phase == "game":    phase_game()
-    elif phase == "battle":  phase_battle()
-    else:
-        st.session_state.phase = "splash"
-        st.rerun()
+
+    # Na desktop – wąska środkowa kolumna (symuluje telefon)
+    # Na telefonie kolumny stackują się automatycznie
+    _, col, _ = st.columns([1, 4, 1])
+
+    with col:
+        if   phase == "splash":  phase_splash()
+        elif phase == "intro":   phase_intro()
+        elif phase == "game":    phase_game()
+        elif phase == "battle":  phase_battle()
+        else:
+            st.session_state.phase = "splash"
+            st.rerun()
 
 if __name__ == "__main__":
     main()
